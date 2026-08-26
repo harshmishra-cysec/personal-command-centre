@@ -17,7 +17,7 @@ export function DashHeader() {
     };
   }, []);
 
-  const quote = QUOTES[quoteIndex];
+  const quote = QUOTES[quoteIndex] ?? QUOTES[0]!;
   const dateLabel = now
     ? now.toLocaleDateString("en-US", {
         weekday: "long",
