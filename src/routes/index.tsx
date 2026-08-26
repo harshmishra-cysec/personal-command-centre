@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { DesktopSidebar, MobileBottomNav } from "@/components/dashboard/nav";
 import { DashHeader } from "@/components/dashboard/header";
@@ -6,6 +6,7 @@ import { StatsRow } from "@/components/dashboard/stats";
 import { PillarBoard } from "@/components/dashboard/pillar-board";
 import { ObjectiveDialog, type ObjectiveDraft } from "@/components/dashboard/objective-dialog";
 import { BOARDS, type Pillar, type Task } from "@/lib/dash-data";
+import { loadBoards, readStreak, recordCompletion, saveBoards } from "@/lib/pcc-storage";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -29,17 +30,35 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
+function computeCompletion(boards: typeof BOARDS) {
+  const all = boards.flatMap((b) => b.tasks);
+  return all.length ? Math.round((all.filter((t) => t.done).length / all.length) * 100) : 0;
+}
+
 function Index() {
   const [boards, setBoards] = useState(BOARDS);
+  const [streak, setStreak] = useState(0);
+  const hydrated = useRef(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [mode, setMode] = useState<"create" | "edit">("create");
   const [activePillar, setActivePillar] = useState<Pillar>("cyber");
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
-  const all = boards.flatMap((b) => b.tasks);
-  const completion = all.length
-    ? Math.round((all.filter((t) => t.done).length / all.length) * 100)
-    : 0;
+  // Load persisted tasks after mount (localStorage is browser-only).
+  useEffect(() => {
+    setBoards(loadBoards());
+    setStreak(readStreak());
+    hydrated.current = true;
+  }, []);
+
+  // Sync every change back to localStorage and update the streak.
+  useEffect(() => {
+    if (!hydrated.current) return;
+    saveBoards(boards);
+    setStreak(recordCompletion(computeCompletion(boards)));
+  }, [boards]);
+
+  const completion = computeCompletion(boards);
 
   function toggle(boardId: Pillar, taskId: string) {
     setBoards((prev) =>
@@ -82,6 +101,15 @@ function Index() {
     );
   }
 
+  function remove(boardId: Pillar, taskId: string) {
+    setBoards((prev) =>
+      prev.map((b) =>
+        b.id === boardId ? { ...b, tasks: b.tasks.filter((t) => t.id !== taskId) } : b,
+      ),
+    );
+    setDialogOpen(false);
+  }
+
   return (
     <div className="flex min-h-screen bg-background">
       <DesktopSidebar />
@@ -96,7 +124,7 @@ function Index() {
             <span className="h-px flex-1 bg-border" />
           </div>
 
-          <StatsRow completion={completion} />
+          <StatsRow completion={completion} streak={streak} />
 
           <div className="grid gap-4 lg:grid-cols-3">
             {boards.map((board) => (
@@ -121,6 +149,7 @@ function Index() {
         initialTask={activeTask}
         onOpenChange={setDialogOpen}
         onSubmit={submit}
+        onDelete={remove}
       />
     </div>
   );
