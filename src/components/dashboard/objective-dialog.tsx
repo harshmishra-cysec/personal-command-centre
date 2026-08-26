@@ -47,6 +47,7 @@ export function ObjectiveDialog({
   initialTask,
   onOpenChange,
   onSubmit,
+  onDelete,
 }: {
   open: boolean;
   mode: "create" | "edit";
@@ -54,6 +55,7 @@ export function ObjectiveDialog({
   initialTask?: Task | null;
   onOpenChange: (open: boolean) => void;
   onSubmit: (draft: ObjectiveDraft, originPillar: Pillar) => void;
+  onDelete?: (pillar: Pillar, taskId: string) => void;
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -229,20 +231,37 @@ export function ObjectiveDialog({
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-2">
-            <button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              className="rounded-md border border-border bg-background px-4 py-2 font-mono text-[11px] tracking-wide text-muted-foreground transition-colors hover:bg-accent"
-            >
-              CANCEL
-            </button>
-            <button
-              type="submit"
-              className="rounded-md border border-primary/60 bg-primary/10 px-4 py-2 font-mono text-[11px] tracking-wide text-primary transition-all hover:bg-primary/20 hover:shadow-[0_0_18px_-4px_rgba(0,229,255,0.45)]"
-            >
-              {mode === "create" ? "DEPLOY OBJECTIVE" : "SAVE CHANGES"}
-            </button>
+          <DialogFooter className="flex items-center justify-between sm:justify-between gap-2">
+            <div>
+              {mode === "edit" && initialTask && onDelete && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onDelete(initialPillar, initialTask.id);
+                    onOpenChange(false);
+                  }}
+                  className="rounded-md border border-red-500/30 bg-red-950/40 px-3 py-2 font-mono text-[11px] font-semibold tracking-wide text-red-400 transition-colors hover:bg-red-900/50"
+                >
+                  DELETE
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onOpenChange(false)}
+                className="rounded-md border border-border bg-background px-4 py-2 font-mono text-[11px] tracking-wide text-muted-foreground transition-colors hover:bg-accent"
+              >
+                CANCEL
+              </button>
+              <button
+                type="submit"
+                className="rounded-md border border-primary/60 bg-primary/10 px-4 py-2 font-mono text-[11px] tracking-wide text-primary transition-all hover:bg-primary/20 hover:shadow-[0_0_18px_-4px_rgba(0,229,255,0.45)]"
+              >
+                {mode === "create" ? "DEPLOY OBJECTIVE" : "SAVE CHANGES"}
+              </button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

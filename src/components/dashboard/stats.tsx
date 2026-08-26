@@ -4,7 +4,13 @@ function Panel({ children }: { children: React.ReactNode }) {
   return <div className="panel p-4">{children}</div>;
 }
 
-export function StatsRow({ completion }: { completion: number }) {
+export function StatsRow({
+  completion,
+  streak = 0,
+}: {
+  completion: number;
+  streak?: number;
+}) {
   return (
     <div className="grid gap-3 sm:grid-cols-3">
       <Panel>
@@ -43,14 +49,15 @@ export function StatsRow({ completion }: { completion: number }) {
           <Flame className="size-3.5 shrink-0 text-emerald" />
         </div>
         <p className="mt-3 font-display text-3xl font-semibold tabular-nums text-foreground">
-          27<span className="ml-1 text-base text-muted-foreground">days</span>
+          {streak}
+          <span className="ml-1 text-base text-muted-foreground">days</span>
         </p>
         <div className="mt-3 flex gap-1">
           {Array.from({ length: 14 }).map((_, i) => (
             <span
               key={i}
               className={
-                i > 1
+                i >= 14 - Math.min(streak, 14)
                   ? "h-4 flex-1 rounded-[2px] bg-emerald/70"
                   : "h-4 flex-1 rounded-[2px] bg-muted"
               }
