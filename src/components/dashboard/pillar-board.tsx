@@ -1,6 +1,6 @@
-import { Check, Plus, ShieldHalf, GraduationCap, BrainCircuit } from "lucide-react";
+import { Check, Plus, ShieldHalf, GraduationCap, BrainCircuit, Play, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Board, Pillar, Task } from "@/lib/dash-data";
+import { formatDuration, type Board, type Pillar, type Task } from "@/lib/dash-data";
 
 export const THEME: Record<
   Pillar,
@@ -37,11 +37,13 @@ export function PillarBoard({
   onToggle,
   onNew,
   onOpenTask,
+  onStartTimer,
 }: {
   board: Board;
   onToggle: (boardId: Pillar, taskId: string) => void;
   onNew: (boardId: Pillar) => void;
   onOpenTask: (boardId: Pillar, task: Task) => void;
+  onStartTimer?: (boardId: Pillar, task: Task) => void;
 }) {
   const theme = THEME[board.id];
   const Icon = theme.icon;
@@ -75,7 +77,7 @@ export function PillarBoard({
           type="button"
           onClick={() => onNew(board.id)}
           className={cn(
-            "flex w-full items-center justify-center gap-2 rounded-md border bg-background px-3 py-2 font-mono text-[11px] tracking-[0.12em] transition-all hover:bg-accent",
+            "flex w-full items-center justify-center gap-2 rounded-md border bg-background px-3 py-2 font-mono text-[11px] tracking-[0.12em] transition-all hover:bg-accent cursor-pointer",
             theme.border,
             theme.text,
             theme.glow,
@@ -89,6 +91,8 @@ export function PillarBoard({
       <ul className="scroll-thin max-h-[360px] flex-1 space-y-2 overflow-y-auto p-3 lg:max-h-[460px]">
         {board.tasks.map((task) => {
           const critical = task.priority === "critical";
+          const durationStr = formatDuration(task.durationMinutes || 45);
+
           return (
             <li key={task.id}>
               <div
@@ -117,7 +121,7 @@ export function PillarBoard({
                   }}
                   aria-label={task.done ? "Mark incomplete" : "Mark complete"}
                   className={cn(
-                    "mt-0.5 grid size-[18px] shrink-0 place-items-center rounded-[5px] border transition-colors",
+                    "mt-0.5 grid size-[18px] shrink-0 place-items-center rounded-[5px] border transition-colors cursor-pointer",
                     task.done
                       ? cn(theme.bg, theme.border)
                       : critical
@@ -138,14 +142,34 @@ export function PillarBoard({
                     >
                       {task.title}
                     </p>
-                    <span
-                      className={cn(
-                        "shrink-0 font-mono text-[10px] text-slate-400 tabular-nums",
-                        task.done && "line-through",
+
+                    {/* Allocated Duration Badge & Stopwatch Focus Launch Button */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded border border-white/10 bg-[#0B0F17] px-1.5 py-0.5 font-mono text-[10px] text-cyan-400 font-semibold tabular-nums",
+                          task.done && "line-through opacity-70",
+                        )}
+                        title="Allocated duration"
+                      >
+                        <Clock className="size-2.5" />
+                        {durationStr}
+                      </span>
+
+                      {!task.done && onStartTimer && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onStartTimer(board.id, task);
+                          }}
+                          className="grid size-6 place-items-center rounded border border-cyan-400/40 bg-cyan-950/40 text-cyan-400 hover:bg-cyan-400 hover:text-black hover:shadow-[0_0_12px_rgba(0,229,255,0.6)] transition-all cursor-pointer"
+                          title="Start Focus Stopwatch"
+                        >
+                          <Play className="size-3 fill-current ml-0.5" />
+                        </button>
                       )}
-                    >
-                      {task.slot}
-                    </span>
+                    </div>
                   </div>
 
                   {task.description && (

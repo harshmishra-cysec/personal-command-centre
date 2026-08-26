@@ -7,9 +7,11 @@ function Panel({ children }: { children: React.ReactNode }) {
 export function StatsRow({
   completion,
   streak = 0,
+  focusedHours = 0,
 }: {
   completion: number;
   streak?: number;
+  focusedHours?: number;
 }) {
   return (
     <div className="grid gap-3 sm:grid-cols-3">
@@ -36,10 +38,11 @@ export function StatsRow({
           <Timer className="size-3.5 shrink-0 text-gold" />
         </div>
         <p className="mt-3 font-display text-3xl font-semibold tabular-nums text-foreground">
-          5.4<span className="ml-0.5 text-base text-muted-foreground">h</span>
+          {focusedHours.toFixed(1)}
+          <span className="ml-0.5 text-base text-muted-foreground">h</span>
         </p>
         <p className="mt-3 text-[11px] text-muted-foreground">
-          Deep work 3.2h · Labs 1.4h · Review 0.8h
+          Calculated from live stopwatch logs & completed objectives
         </p>
       </Panel>
 

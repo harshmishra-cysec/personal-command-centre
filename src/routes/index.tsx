@@ -1,12 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { DesktopSidebar, MobileBottomNav } from "@/components/dashboard/nav";
+import { DesktopSidebar, MobileBottomNav, type TabView } from "@/components/dashboard/nav";
 import { DashHeader } from "@/components/dashboard/header";
 import { StatsRow } from "@/components/dashboard/stats";
 import { PillarBoard } from "@/components/dashboard/pillar-board";
 import { ObjectiveDialog, type ObjectiveDraft } from "@/components/dashboard/objective-dialog";
+import { RoadmapsView } from "@/components/dashboard/roadmaps-view";
+import { RealityCheckView } from "@/components/dashboard/reality-check-view";
+import { StatsView } from "@/components/dashboard/stats-view";
+import { IntroScreen } from "@/components/dashboard/IntroScreen";
+import { TaskStopwatchModal } from "@/components/dashboard/task-stopwatch-modal";
 import { BOARDS, type Pillar, type Task } from "@/lib/dash-data";
 import { loadBoards, readStreak, recordCompletion, saveBoards } from "@/lib/pcc-storage";
+import { computeFocusHoursFromBoards } from "@/lib/stats-data";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -19,12 +25,9 @@ export const Route = createFileRoute("/")({
       },
       { property: "og:title", content: "Personal Command Center — Daily Dash" },
       {
-        property: "og:description",
-        content:
-          "Track cybersecurity, academics, and AIML objectives in one tactical daily dashboard.",
+        name: "twitter:card",
+        content: "summary_large_image",
       },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Index,
@@ -36,22 +39,32 @@ function computeCompletion(boards: typeof BOARDS) {
 }
 
 function Index() {
+  const [showIntro, setShowIntro] = useState<boolean>(true);
+  const [activeTab, setActiveTab] = useState<TabView>("today");
   const [boards, setBoards] = useState(BOARDS);
   const [streak, setStreak] = useState(0);
   const hydrated = useRef(false);
+
+  // Task Dialog State
   const [dialogOpen, setDialogOpen] = useState(false);
   const [mode, setMode] = useState<"create" | "edit">("create");
   const [activePillar, setActivePillar] = useState<Pillar>("cyber");
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
-  // Load persisted tasks after mount (localStorage is browser-only).
+  // Active Stopwatch Modal State
+  const [activeStopwatch, setActiveStopwatch] = useState<{
+    task: Task;
+    pillar: Pillar;
+  } | null>(null);
+
+  // Load persisted tasks after mount
   useEffect(() => {
     setBoards(loadBoards());
     setStreak(readStreak());
     hydrated.current = true;
   }, []);
 
-  // Sync every change back to localStorage and update the streak.
+  // Sync every change back to localStorage and update the streak
   useEffect(() => {
     if (!hydrated.current) return;
     saveBoards(boards);
@@ -59,12 +72,37 @@ function Index() {
   }, [boards]);
 
   const completion = computeCompletion(boards);
+  const focusedHours = computeFocusHoursFromBoards(boards);
+
+  const handleIntroComplete = () => {
+    setShowIntro(false);
+  };
+
+  const handleReplayIntro = () => {
+    setShowIntro(true);
+  };
 
   function toggle(boardId: Pillar, taskId: string) {
     setBoards((prev) =>
       prev.map((b) =>
         b.id === boardId
-          ? { ...b, tasks: b.tasks.map((t) => (t.id === taskId ? { ...t, done: !t.done } : t)) }
+          ? {
+              ...b,
+              tasks: b.tasks.map((t) => {
+                if (t.id === taskId) {
+                  const nextDone = !t.done;
+                  return {
+                    ...t,
+                    done: nextDone,
+                    actualFocusMinutes:
+                      nextDone && (!t.actualFocusMinutes || t.actualFocusMinutes === 0)
+                        ? t.durationMinutes || 45
+                        : t.actualFocusMinutes,
+                  };
+                }
+                return t;
+              }),
+            }
           : b,
       ),
     );
@@ -82,6 +120,51 @@ function Index() {
     setActivePillar(boardId);
     setActiveTask(task);
     setDialogOpen(true);
+  }
+
+  function handleStartTimer(boardId: Pillar, task: Task) {
+    setActiveStopwatch({ task, pillar: boardId });
+  }
+
+  function handleFinishTimerTask(pillar: Pillar, taskId: string, elapsedMinutes: number) {
+    setBoards((prev) =>
+      prev.map((b) =>
+        b.id === pillar
+          ? {
+              ...b,
+              tasks: b.tasks.map((t) =>
+                t.id === taskId
+                  ? {
+                      ...t,
+                      done: true,
+                      actualFocusMinutes: (t.actualFocusMinutes || 0) + elapsedMinutes,
+                    }
+                  : t,
+              ),
+            }
+          : b,
+      ),
+    );
+  }
+
+  function handleUpdateFocusMinutes(pillar: Pillar, taskId: string, elapsedMinutes: number) {
+    setBoards((prev) =>
+      prev.map((b) =>
+        b.id === pillar
+          ? {
+              ...b,
+              tasks: b.tasks.map((t) =>
+                t.id === taskId
+                  ? {
+                      ...t,
+                      actualFocusMinutes: (t.actualFocusMinutes || 0) + elapsedMinutes,
+                    }
+                  : t,
+              ),
+            }
+          : b,
+      ),
+    );
   }
 
   function submit(draft: ObjectiveDraft, originPillar: Pillar) {
@@ -112,36 +195,55 @@ function Index() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <DesktopSidebar />
+      {/* Interactive TryHackMe Breach & Overclock Intro Sequence */}
+      {showIntro && <IntroScreen onComplete={handleIntroComplete} />}
+
+      <DesktopSidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onReplayIntro={handleReplayIntro}
+      />
 
       <div className="grid-backdrop flex min-w-0 flex-1 flex-col">
-        <DashHeader />
+        <DashHeader onReplayIntro={handleReplayIntro} />
 
         <main className="flex-1 space-y-4 px-4 pt-4 pb-24 lg:px-6 lg:pb-8">
-          <div className="flex items-center gap-3">
-            <span className="size-1.5 rounded-full bg-cyber" />
-            <h2 className="label-mono text-foreground">Daily Dash</h2>
-            <span className="h-px flex-1 bg-border" />
-          </div>
+          {activeTab === "today" && (
+            <>
+              <div className="flex items-center gap-3">
+                <span className="size-1.5 rounded-full bg-cyber" />
+                <h2 className="label-mono text-foreground">Daily Dash</h2>
+                <span className="h-px flex-1 bg-border" />
+              </div>
 
-          <StatsRow completion={completion} streak={streak} />
+              <StatsRow completion={completion} streak={streak} focusedHours={focusedHours} />
 
-          <div className="grid gap-4 lg:grid-cols-3">
-            {boards.map((board) => (
-              <PillarBoard
-                key={board.id}
-                board={board}
-                onToggle={toggle}
-                onNew={openNew}
-                onOpenTask={openTask}
-              />
-            ))}
-          </div>
+              <div className="grid gap-4 lg:grid-cols-3">
+                {boards.map((board) => (
+                  <PillarBoard
+                    key={board.id}
+                    board={board}
+                    onToggle={toggle}
+                    onNew={openNew}
+                    onOpenTask={openTask}
+                    onStartTimer={handleStartTimer}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+          {activeTab === "roadmaps" && <RoadmapsView />}
+          {activeTab === "reality" && (
+            <RealityCheckView onNavigateToToday={() => setActiveTab("today")} />
+          )}
+          {activeTab === "stats" && <StatsView />}
         </main>
       </div>
 
-      <MobileBottomNav />
+      <MobileBottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
+      {/* Task Creation & Edit Modal */}
       <ObjectiveDialog
         open={dialogOpen}
         mode={mode}
@@ -151,6 +253,17 @@ function Index() {
         onSubmit={submit}
         onDelete={remove}
       />
+
+      {/* Floating / Full Tactical Focus Stopwatch */}
+      {activeStopwatch && (
+        <TaskStopwatchModal
+          task={activeStopwatch.task}
+          pillar={activeStopwatch.pillar}
+          onClose={() => setActiveStopwatch(null)}
+          onFinishTask={handleFinishTimerTask}
+          onUpdateFocusMinutes={handleUpdateFocusMinutes}
+        />
+      )}
     </div>
   );
 }

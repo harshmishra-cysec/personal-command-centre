@@ -12,10 +12,13 @@ import {
   BOARD_META,
   PRIORITY_LABEL,
   TAG_OPTIONS,
+  DURATION_PRESETS,
+  formatDuration,
   type Pillar,
   type Priority,
   type Task,
 } from "@/lib/dash-data";
+import { Clock, Hourglass } from "lucide-react";
 
 const PILLARS: Pillar[] = ["cyber", "gold", "emerald"];
 const PRIORITIES: Priority[] = ["critical", "normal", "low"];
@@ -61,7 +64,9 @@ export function ObjectiveDialog({
   const [description, setDescription] = useState("");
   const [pillar, setPillar] = useState<Pillar>(initialPillar);
   const [priority, setPriority] = useState<Priority>("normal");
-  const [slot, setSlot] = useState("09:00");
+  const [durationMinutes, setDurationMinutes] = useState<number>(45);
+  const [isCustomDuration, setIsCustomDuration] = useState(false);
+  const [customMinutesInput, setCustomMinutesInput] = useState("45");
   const [date, setDate] = useState("");
   const [tag, setTag] = useState("STUDY");
 
@@ -71,15 +76,38 @@ export function ObjectiveDialog({
     setTitle(initialTask?.title ?? "");
     setDescription(initialTask?.description ?? "");
     setPriority(initialTask?.priority ?? "normal");
-    setSlot(initialTask?.slot && initialTask.slot !== "—" ? initialTask.slot : "09:00");
+
+    const initialDur = initialTask?.durationMinutes ?? 45;
+    setDurationMinutes(initialDur);
+    const isPreset = DURATION_PRESETS.some((p) => p.minutes === initialDur);
+    setIsCustomDuration(!isPreset);
+    setCustomMinutesInput(String(initialDur));
+
     setDate(initialTask?.date ?? new Date().toISOString().slice(0, 10));
     setTag(initialTask?.tag ?? "STUDY");
   }, [open, initialPillar, initialTask]);
+
+  const handleSelectPreset = (minutes: number) => {
+    setIsCustomDuration(false);
+    setDurationMinutes(minutes);
+    setCustomMinutesInput(String(minutes));
+  };
+
+  const handleCustomChange = (val: string) => {
+    setCustomMinutesInput(val);
+    const parsed = parseInt(val, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      setDurationMinutes(parsed);
+    }
+  };
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const value = title.trim();
     if (!value) return;
+
+    const finalDuration = durationMinutes > 0 ? durationMinutes : 45;
+
     onSubmit(
       {
         pillar,
@@ -88,7 +116,10 @@ export function ObjectiveDialog({
           title: value,
           description: description.trim() || undefined,
           priority,
-          slot: slot || "—",
+          durationMinutes: finalDuration,
+          actualFocusMinutes:
+            initialTask?.actualFocusMinutes ?? (initialTask?.done ? finalDuration : 0),
+          slot: formatDuration(finalDuration),
           date: date || undefined,
           tag,
           done: initialTask?.done ?? false,
@@ -107,7 +138,7 @@ export function ObjectiveDialog({
             {mode === "create" ? "NEW OBJECTIVE" : "EDIT OBJECTIVE"}
           </DialogTitle>
           <DialogDescription className="label-mono normal-case tracking-normal">
-            Log the mission parameters. Title is required.
+            Log mission parameters and allocated duration.
           </DialogDescription>
         </DialogHeader>
 
@@ -135,12 +166,13 @@ export function ObjectiveDialog({
               id="obj-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={3}
+              rows={2}
               placeholder="Lab room, CVE references, chapter numbers…"
               className={cn(field, "resize-none")}
             />
           </div>
 
+          {/* Track Selection */}
           <div className="space-y-1.5">
             <span className="label-mono block">Track</span>
             <div className="grid grid-cols-3 gap-2">
@@ -162,6 +194,7 @@ export function ObjectiveDialog({
             </div>
           </div>
 
+          {/* Priority Selection */}
           <div className="space-y-1.5">
             <span className="label-mono block">Priority</span>
             <div className="grid grid-cols-3 gap-2">
@@ -183,22 +216,78 @@ export function ObjectiveDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="label-mono block" htmlFor="obj-time">
-                Time
-              </label>
-              <input
-                id="obj-time"
-                type="time"
-                value={slot}
-                onChange={(e) => setSlot(e.target.value)}
-                className={cn(field, "font-mono")}
-              />
+          {/* Allocated Duration Quick Pick */}
+          <div className="space-y-2 rounded-lg border border-white/5 bg-[#0B0F17] p-3">
+            <div className="flex items-center justify-between">
+              <span className="label-mono flex items-center gap-1.5 text-foreground font-bold">
+                <Clock className="size-3 text-cyan-400" />
+                Allocated Focus Duration
+              </span>
+              <span className="font-mono text-xs font-bold text-cyan-400">
+                {formatDuration(durationMinutes)}
+              </span>
             </div>
+
+            {/* Duration Pills */}
+            <div className="grid grid-cols-5 gap-1.5">
+              {DURATION_PRESETS.map((preset) => {
+                const isSelected = !isCustomDuration && durationMinutes === preset.minutes;
+                return (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => handleSelectPreset(preset.minutes)}
+                    className={cn(
+                      "rounded-md border py-1.5 font-mono text-xs font-semibold transition-all",
+                      isSelected
+                        ? "border-cyan-400 bg-cyan-950/60 text-cyan-300 shadow-[0_0_10px_rgba(0,229,255,0.3)]"
+                        : "border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10 hover:text-foreground",
+                    )}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Custom Duration Toggle & Input */}
+            <div className="pt-1 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsCustomDuration(true)}
+                className={cn(
+                  "rounded-md border px-2.5 py-1 font-mono text-[11px] transition-colors",
+                  isCustomDuration
+                    ? "border-gold/60 bg-gold/10 text-gold"
+                    : "border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10",
+                )}
+              >
+                Custom Mins
+              </button>
+
+              {isCustomDuration && (
+                <div className="flex items-center gap-1.5 flex-1">
+                  <input
+                    type="number"
+                    min="5"
+                    max="480"
+                    step="5"
+                    value={customMinutesInput}
+                    onChange={(e) => handleCustomChange(e.target.value)}
+                    placeholder="e.g. 75"
+                    className={cn(field, "font-mono text-xs py-1 h-8")}
+                  />
+                  <span className="font-mono text-[11px] text-muted-foreground">minutes</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Date & Tag */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label className="label-mono block" htmlFor="obj-date">
-                Date
+                Target Date
               </label>
               <input
                 id="obj-date"
@@ -208,30 +297,30 @@ export function ObjectiveDialog({
                 className={cn(field, "font-mono")}
               />
             </div>
-          </div>
 
-          <div className="space-y-1.5">
-            <span className="label-mono block">Tag / type</span>
-            <div className="flex flex-wrap gap-2">
-              {TAG_OPTIONS.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTag(t)}
-                  className={cn(
-                    "rounded-full border px-2.5 py-1 font-mono text-[10px] tracking-[0.12em] transition-colors",
-                    tag === t
-                      ? "border-primary/60 bg-primary/10 text-primary"
-                      : "border-border bg-background text-muted-foreground hover:bg-accent",
-                  )}
-                >
-                  {t}
-                </button>
-              ))}
+            <div className="space-y-1.5">
+              <span className="label-mono block">Tag / type</span>
+              <div className="flex flex-wrap gap-1.5">
+                {TAG_OPTIONS.map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setTag(t)}
+                    className={cn(
+                      "rounded-md border px-2 py-1 font-mono text-[10px] tracking-[0.08em] transition-colors",
+                      tag === t
+                        ? "border-primary/60 bg-primary/10 text-primary"
+                        : "border-border bg-background text-muted-foreground hover:bg-accent",
+                    )}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          <DialogFooter className="flex items-center justify-between sm:justify-between gap-2">
+          <DialogFooter className="flex items-center justify-between sm:justify-between gap-2 pt-2">
             <div>
               {mode === "edit" && initialTask && onDelete && (
                 <button

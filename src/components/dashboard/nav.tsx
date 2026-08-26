@@ -1,6 +1,16 @@
 import { useState } from "react";
-import { BarChart3, CalendarCheck, Map, PanelLeftClose, PanelLeftOpen, ScanEye, Terminal } from "lucide-react";
+import {
+  BarChart3,
+  CalendarCheck,
+  Map,
+  PanelLeftClose,
+  PanelLeftOpen,
+  ScanEye,
+  Terminal,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+
+export type TabView = "today" | "roadmaps" | "reality" | "stats";
 
 export const NAV_ITEMS = [
   { id: "today", label: "Today", icon: CalendarCheck },
@@ -9,9 +19,25 @@ export const NAV_ITEMS = [
   { id: "stats", label: "Stats", icon: BarChart3 },
 ] as const;
 
-export function DesktopSidebar() {
+interface DesktopSidebarProps {
+  activeTab?: TabView;
+  setActiveTab?: (tab: TabView) => void;
+  onTabChange?: (tab: TabView) => void;
+  onReplayIntro?: () => void;
+}
+
+export function DesktopSidebar({
+  activeTab = "today",
+  setActiveTab,
+  onTabChange,
+  onReplayIntro,
+}: DesktopSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const [active, setActive] = useState<string>("today");
+
+  const handleTabClick = (tab: TabView) => {
+    setActiveTab?.(tab);
+    onTabChange?.(tab);
+  };
 
   return (
     <aside
@@ -20,24 +46,31 @@ export function DesktopSidebar() {
         collapsed ? "w-[68px]" : "w-[232px]",
       )}
     >
-      <div className="flex h-16 items-center gap-2.5 border-b border-border px-4">
-        <span className="grid size-8 shrink-0 place-items-center rounded-md border border-border bg-background text-primary">
-          <Terminal className="size-4" />
-        </span>
-        {!collapsed && (
-          <span className="truncate font-mono text-[11px] tracking-[0.22em] text-muted-foreground">
-            PCC / v1.0
+      <div className="flex h-16 items-center border-b border-border px-3">
+        <button
+          type="button"
+          onClick={onReplayIntro}
+          className="flex w-full items-center gap-2.5 rounded-md p-1 text-left group cursor-pointer hover:text-primary transition-colors focus:outline-none"
+          title="Replay System Intro"
+        >
+          <span className="grid size-8 shrink-0 place-items-center rounded-md border border-border bg-background text-primary group-hover:border-primary/80 group-hover:shadow-[0_0_12px_rgba(0,229,255,0.35)] transition-all">
+            <Terminal className="size-4" />
           </span>
-        )}
+          {!collapsed && (
+            <span className="truncate font-mono text-[11px] tracking-[0.22em] text-muted-foreground group-hover:text-primary transition-colors">
+              PCC / v1.0
+            </span>
+          )}
+        </button>
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 p-3">
         {NAV_ITEMS.map((item) => {
-          const isActive = active === item.id;
+          const isActive = activeTab === item.id;
           return (
             <button
               key={item.id}
-              onClick={() => setActive(item.id)}
+              onClick={() => handleTabClick(item.id as TabView)}
               className={cn(
                 "group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
                 isActive
@@ -67,18 +100,31 @@ export function DesktopSidebar() {
   );
 }
 
-export function MobileBottomNav() {
-  const [active, setActive] = useState<string>("today");
+interface MobileBottomNavProps {
+  activeTab?: TabView;
+  setActiveTab?: (tab: TabView) => void;
+  onTabChange?: (tab: TabView) => void;
+}
+
+export function MobileBottomNav({
+  activeTab = "today",
+  setActiveTab,
+  onTabChange,
+}: MobileBottomNavProps) {
+  const handleTabClick = (tab: TabView) => {
+    setActiveTab?.(tab);
+    onTabChange?.(tab);
+  };
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 backdrop-blur lg:hidden">
       <div className="grid grid-cols-4">
         {NAV_ITEMS.map((item) => {
-          const isActive = active === item.id;
+          const isActive = activeTab === item.id;
           return (
             <button
               key={item.id}
-              onClick={() => setActive(item.id)}
+              onClick={() => handleTabClick(item.id as TabView)}
               className={cn(
                 "flex flex-col items-center gap-1 py-2.5 text-[10px] tracking-wide transition-colors",
                 isActive ? "text-primary" : "text-muted-foreground",

@@ -38,27 +38,27 @@ Daily Dash Content Components (Mock Data):
 
 - Top Row Stats:
 
-    - Daily Completion Bar (% Today)
+  - Daily Completion Bar (% Today)
 
-    - Total Hours Focused Today
+  - Total Hours Focused Today
 
-    - Daily Streak (Current Count)
+  - Daily Streak (Current Count)
 
 - 3 Pillar Boards (Rendered side-by-side on desktop, stacked on mobile):
 
-    - BOARD 1: [Cybersecurity Track (Accent: Cyan)]
+  - BOARD 1: [Cybersecurity Track (Accent: Cyan)]
 
-        - Header with Icon and Title. Add task input bar.
+    - Header with Icon and Title. Add task input bar.
 
-        - Scrollable list of dummy tasks with priority tags (e.g., [CRITICAL] Finish TryHackMe AD Room; [NORMAL] Practice Linux PrivEsc; [CLASS] CySec Lab 2PM). Time-slot tags included. Checkboxes must use the accent color.
+    - Scrollable list of dummy tasks with priority tags (e.g., [CRITICAL] Finish TryHackMe AD Room; [NORMAL] Practice Linux PrivEsc; [CLASS] CySec Lab 2PM). Time-slot tags included. Checkboxes must use the accent color.
 
-    - BOARD 2: [Academics & Labs (Accent: Gold)]
+  - BOARD 2: [Academics & Labs (Accent: Gold)]
 
-        - Header, input, and dummy task list (e.g., [SUBMIT] OS Assignment; [LECTURE] Linear Algebra 10AM; [LAB] AIML Sitting 3PM).
+    - Header, input, and dummy task list (e.g., [SUBMIT] OS Assignment; [LECTURE] Linear Algebra 10AM; [LAB] AIML Sitting 3PM).
 
-    - BOARD 3: [AIML & Extra (Accent: Emerald)]
+  - BOARD 3: [AIML & Extra (Accent: Emerald)]
 
-        - Header, input, and dummy task list (e.g., [BUILD] Train basic CNN model; [READ] Research paper abstract).
+    - Header, input, and dummy task list (e.g., [BUILD] Train basic CNN model; [READ] Research paper abstract).
 
 Ensure all elements feel polished, professional, and built for function, not generic styling.
 

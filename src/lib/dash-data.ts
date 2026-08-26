@@ -8,7 +8,9 @@ export type Task = {
   title: string;
   description?: string | undefined;
   priority: Priority;
-  slot: string;
+  durationMinutes: number; // Estimated duration in minutes (default: 45)
+  actualFocusMinutes?: number; // Accumulated focus minutes from stopwatch/timer
+  slot?: string | undefined; // Legacy / secondary time label
   date?: string | undefined;
   done: boolean;
 };
@@ -27,6 +29,22 @@ export const PRIORITY_LABEL: Record<Priority, string> = {
 };
 
 export const TAG_OPTIONS = ["LAB", "EXAM", "STUDY", "BUILD", "ROOM", "CLASS", "SHIP", "READ"];
+
+export const DURATION_PRESETS = [
+  { label: "25m", minutes: 25 },
+  { label: "45m", minutes: 45 },
+  { label: "60m", minutes: 60 },
+  { label: "90m", minutes: 90 },
+  { label: "120m", minutes: 120 },
+];
+
+export function formatDuration(minutes: number): string {
+  if (!minutes || minutes <= 0) return "25m";
+  if (minutes < 60) return `${minutes}m`;
+  const hrs = Math.floor(minutes / 60);
+  const rem = minutes % 60;
+  return rem > 0 ? `${hrs}h ${rem}m` : `${hrs}h`;
+}
 
 export const BOARD_META: Record<Pillar, { title: string; subtitle: string }> = {
   cyber: { title: "Cybersecurity Track", subtitle: "Offensive ops · labs · certs" },
@@ -61,7 +79,8 @@ export const BOARDS: Board[] = [
         description:
           "Complete the Active Directory attack path: Kerberoasting, AS-REP roasting, then dump NTDS with secretsdump.",
         priority: "critical",
-        slot: "08:00",
+        durationMinutes: 60,
+        actualFocusMinutes: 0,
         done: false,
       },
       {
@@ -70,7 +89,8 @@ export const BOARDS: Board[] = [
         title: "Practice Linux PrivEsc",
         description: "SUID binaries, capabilities, cron abuse — GTFOBins drill set.",
         priority: "normal",
-        slot: "11:30",
+        durationMinutes: 45,
+        actualFocusMinutes: 45,
         done: true,
       },
       {
@@ -79,7 +99,8 @@ export const BOARDS: Board[] = [
         title: "CySec Lab",
         description: "Lab block 3, room B-204. Bring Kali VM snapshot.",
         priority: "normal",
-        slot: "14:00",
+        durationMinutes: 90,
+        actualFocusMinutes: 0,
         done: false,
       },
       {
@@ -88,16 +109,19 @@ export const BOARDS: Board[] = [
         title: "Review Burp Suite intruder notes",
         description: "Cluster bomb vs pitchfork payload positioning recap.",
         priority: "low",
-        slot: "19:00",
+        durationMinutes: 25,
+        actualFocusMinutes: 0,
         done: false,
       },
       {
         id: "c5",
         tag: "BUILD",
         title: "Write up HTB machine report",
-        description: "Full walkthrough for the retired box incl. CVE-2023-23397 exploitation chain.",
+        description:
+          "Full walkthrough for the retired box incl. CVE-2023-23397 exploitation chain.",
         priority: "critical",
-        slot: "21:30",
+        durationMinutes: 60,
+        actualFocusMinutes: 0,
         done: false,
       },
     ],
@@ -110,9 +134,11 @@ export const BOARDS: Board[] = [
         id: "a1",
         tag: "EXAM",
         title: "OS assignment — scheduling problems",
-        description: "Chapter 5: SJF, round robin with quantum 4, and priority aging problems 1-12.",
+        description:
+          "Chapter 5: SJF, round robin with quantum 4, and priority aging problems 1-12.",
         priority: "critical",
-        slot: "09:00",
+        durationMinutes: 60,
+        actualFocusMinutes: 0,
         done: false,
       },
       {
@@ -121,7 +147,8 @@ export const BOARDS: Board[] = [
         title: "Linear Algebra",
         description: "Eigenvalues lecture, hall A-101.",
         priority: "normal",
-        slot: "10:00",
+        durationMinutes: 45,
+        actualFocusMinutes: 45,
         done: true,
       },
       {
@@ -130,7 +157,8 @@ export const BOARDS: Board[] = [
         title: "AIML sitting",
         description: "Lab record submission — experiments 6 and 7.",
         priority: "normal",
-        slot: "15:00",
+        durationMinutes: 90,
+        actualFocusMinutes: 0,
         done: false,
       },
       {
@@ -139,7 +167,8 @@ export const BOARDS: Board[] = [
         title: "DBMS normalization set",
         description: "1NF through BCNF worked examples.",
         priority: "low",
-        slot: "18:00",
+        durationMinutes: 45,
+        actualFocusMinutes: 0,
         done: false,
       },
     ],
@@ -154,7 +183,8 @@ export const BOARDS: Board[] = [
         title: "Train basic CNN model",
         description: "CIFAR-10 baseline, 3 conv blocks, track val accuracy over 20 epochs.",
         priority: "normal",
-        slot: "16:30",
+        durationMinutes: 60,
+        actualFocusMinutes: 0,
         done: false,
       },
       {
@@ -163,7 +193,8 @@ export const BOARDS: Board[] = [
         title: "Research paper abstract — ViT survey",
         description: "Summarize patch embedding + attention scaling takeaways in notes.",
         priority: "low",
-        slot: "20:00",
+        durationMinutes: 30,
+        actualFocusMinutes: 0,
         done: false,
       },
       {
@@ -172,7 +203,8 @@ export const BOARDS: Board[] = [
         title: "Push portfolio site update",
         description: "Deploy new projects section and refresh OG images.",
         priority: "critical",
-        slot: "22:00",
+        durationMinutes: 45,
+        actualFocusMinutes: 45,
         done: true,
       },
     ],

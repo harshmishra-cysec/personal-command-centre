@@ -1,7 +1,42 @@
-import { BOARDS, type Board } from "@/lib/dash-data";
+import { BOARDS, type Board, type Task } from "@/lib/dash-data";
 
 const TASKS_KEY = "pcc_tasks";
 const HISTORY_KEY = "pcc_history";
+const VISITED_INTRO_KEY = "pcc_intro_seen";
+
+function normalizeTask(rawTask: Record<string, unknown>): Task {
+  const id =
+    typeof rawTask.id === "string"
+      ? rawTask.id
+      : `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const tag = typeof rawTask.tag === "string" ? rawTask.tag : "STUDY";
+  const title = typeof rawTask.title === "string" ? rawTask.title : "Untitled Objective";
+  const description = typeof rawTask.description === "string" ? rawTask.description : undefined;
+  const priority =
+    rawTask.priority === "critical" || rawTask.priority === "normal" || rawTask.priority === "low"
+      ? rawTask.priority
+      : "normal";
+  const durationMinutes =
+    typeof rawTask.durationMinutes === "number" && rawTask.durationMinutes > 0
+      ? rawTask.durationMinutes
+      : 45;
+  const done = Boolean(rawTask.done);
+  const actualFocusMinutes =
+    typeof rawTask.actualFocusMinutes === "number" ? rawTask.actualFocusMinutes : done ? 45 : 0;
+
+  return {
+    id,
+    tag,
+    title,
+    description,
+    priority,
+    durationMinutes,
+    actualFocusMinutes,
+    slot: typeof rawTask.slot === "string" ? rawTask.slot : undefined,
+    date: typeof rawTask.date === "string" ? rawTask.date : undefined,
+    done,
+  };
+}
 
 function isBoardArray(value: unknown): value is Board[] {
   return (
@@ -22,7 +57,13 @@ export function loadBoards(): Board[] {
     const raw = window.localStorage.getItem(TASKS_KEY);
     if (!raw) return BOARDS;
     const parsed: unknown = JSON.parse(raw);
-    return isBoardArray(parsed) ? parsed : BOARDS;
+    if (isBoardArray(parsed)) {
+      return parsed.map((board) => ({
+        ...board,
+        tasks: board.tasks.map(normalizeTask),
+      }));
+    }
+    return BOARDS;
   } catch {
     return BOARDS;
   }
@@ -33,7 +74,7 @@ export function saveBoards(boards: Board[]) {
   try {
     window.localStorage.setItem(TASKS_KEY, JSON.stringify(boards));
   } catch {
-    // storage unavailable (private mode, quota) — state still lives in memory
+    // storage unavailable
   }
 }
 
@@ -43,11 +84,6 @@ function todayKey(offsetDays = 0): string {
   return d.toISOString().slice(0, 10);
 }
 
-/**
- * Record today's completion percentage into the daily history log and
- * return the current streak: consecutive days (ending today, or yesterday
- * if today has no completions yet) with at least one completed task.
- */
 export function recordCompletion(completion: number): number {
   let history: Record<string, number> = {};
   try {
@@ -70,7 +106,7 @@ export function recordCompletion(completion: number): number {
   }
 
   let streak = 0;
-  let offset = history[todayKey()]! > 0 ? 0 : 1; // today still in progress doesn't break the streak
+  let offset = (history[todayKey()] ?? 0) > 0 ? 0 : 1;
   while ((history[todayKey(offset)] ?? 0) > 0) {
     streak += 1;
     offset += 1;
@@ -78,7 +114,6 @@ export function recordCompletion(completion: number): number {
   return streak;
 }
 
-/** Current streak without writing (used on initial load). */
 export function readStreak(): number {
   try {
     const raw = window.localStorage.getItem(HISTORY_KEY);
@@ -95,5 +130,30 @@ export function readStreak(): number {
     return streak;
   } catch {
     return 0;
+  }
+}
+
+/** Intro screen seen flag in sessionStorage */
+export function hasSeenIntro(): boolean {
+  try {
+    return window.sessionStorage.getItem(VISITED_INTRO_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+export function markIntroSeen(): void {
+  try {
+    window.sessionStorage.setItem(VISITED_INTRO_KEY, "true");
+  } catch {
+    // ignore
+  }
+}
+
+export function resetIntroSeen(): void {
+  try {
+    window.sessionStorage.removeItem(VISITED_INTRO_KEY);
+  } catch {
+    // ignore
   }
 }

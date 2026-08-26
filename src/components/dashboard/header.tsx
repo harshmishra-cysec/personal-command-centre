@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Quote } from "lucide-react";
+import { Quote, Terminal } from "lucide-react";
 import { QUOTES } from "@/lib/dash-data";
 
-export function DashHeader() {
+export function DashHeader({ onReplayIntro }: { onReplayIntro?: () => void }) {
   const [now, setNow] = useState<Date | null>(null);
   const [quoteIndex, setQuoteIndex] = useState(0);
 
@@ -33,11 +33,25 @@ export function DashHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 py-3 lg:grid-cols-3 lg:px-6">
-        <div className="min-w-0">
-          <h1 className="truncate font-display text-[13px] font-semibold tracking-[0.28em] text-foreground lg:text-sm">
-            PERSONAL COMMAND CENTER
-          </h1>
-          <p className="label-mono mt-1 truncate">operator // harsh · status: engaged</p>
+        <div className="min-w-0 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onReplayIntro}
+            className="min-w-0 text-left group cursor-pointer hover:opacity-90 transition-opacity focus:outline-none"
+            title="Replay System Intro"
+          >
+            <div className="flex items-center gap-2">
+              <span className="lg:hidden grid size-6 shrink-0 place-items-center rounded border border-border bg-background text-primary group-hover:border-primary/80 group-hover:shadow-[0_0_10px_rgba(0,229,255,0.3)] transition-all">
+                <Terminal className="size-3.5" />
+              </span>
+              <h1 className="truncate font-display text-[13px] font-semibold tracking-[0.28em] text-foreground group-hover:text-primary transition-colors lg:text-sm">
+                PERSONAL COMMAND CENTER
+              </h1>
+            </div>
+            <p className="label-mono mt-0.5 truncate text-muted-foreground group-hover:text-foreground transition-colors">
+              operator // harsh · status: engaged
+            </p>
+          </button>
         </div>
 
         <div className="hidden justify-self-center text-center lg:block">
@@ -59,10 +73,13 @@ export function DashHeader() {
         </div>
       </div>
 
-      <div className="border-t border-border px-4 py-2 text-center lg:hidden">
+      <div className="border-t border-border px-4 py-2 flex items-center justify-between lg:hidden">
         <p className="font-mono text-xs text-foreground">
           {dateLabel} <span className="text-muted-foreground">· {timeLabel}</span>
         </p>
+        <span className="font-mono text-[10px] text-primary/80 tracking-widest uppercase">
+          OPERATOR // ENGAGED
+        </span>
       </div>
     </header>
   );
