@@ -88,16 +88,17 @@ export function PillarBoard({
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Add objective…"
           className={cn(
-            "min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground",
+            "min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none ring-0 ring-offset-0 transition-all placeholder:text-muted-foreground focus-visible:ring-2",
             theme.ring,
           )}
         />
         <button
           type="submit"
           className={cn(
-            "grid size-9 shrink-0 place-items-center rounded-md border bg-background transition-colors hover:bg-accent",
+            "grid size-9 shrink-0 place-items-center rounded-md border bg-background transition-all hover:bg-accent",
             theme.border,
             theme.text,
+            theme.glow,
           )}
           aria-label={`Add task to ${board.title}`}
         >
