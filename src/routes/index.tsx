@@ -4,7 +4,8 @@ import { DesktopSidebar, MobileBottomNav } from "@/components/dashboard/nav";
 import { DashHeader } from "@/components/dashboard/header";
 import { StatsRow } from "@/components/dashboard/stats";
 import { PillarBoard } from "@/components/dashboard/pillar-board";
-import { BOARDS, type Pillar } from "@/lib/dash-data";
+import { ObjectiveDialog, type ObjectiveDraft } from "@/components/dashboard/objective-dialog";
+import { BOARDS, type Pillar, type Task } from "@/lib/dash-data";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -30,9 +31,15 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [boards, setBoards] = useState(BOARDS);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [mode, setMode] = useState<"create" | "edit">("create");
+  const [activePillar, setActivePillar] = useState<Pillar>("cyber");
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
 
   const all = boards.flatMap((b) => b.tasks);
-  const completion = Math.round((all.filter((t) => t.done).length / all.length) * 100);
+  const completion = all.length
+    ? Math.round((all.filter((t) => t.done).length / all.length) * 100)
+    : 0;
 
   function toggle(boardId: Pillar, taskId: string) {
     setBoards((prev) =>
@@ -41,6 +48,37 @@ function Index() {
           ? { ...b, tasks: b.tasks.map((t) => (t.id === taskId ? { ...t, done: !t.done } : t)) }
           : b,
       ),
+    );
+  }
+
+  function openNew(boardId: Pillar) {
+    setMode("create");
+    setActivePillar(boardId);
+    setActiveTask(null);
+    setDialogOpen(true);
+  }
+
+  function openTask(boardId: Pillar, task: Task) {
+    setMode("edit");
+    setActivePillar(boardId);
+    setActiveTask(task);
+    setDialogOpen(true);
+  }
+
+  function submit(draft: ObjectiveDraft, originPillar: Pillar) {
+    setBoards((prev) =>
+      prev.map((b) => {
+        let tasks = b.tasks;
+        if (b.id === originPillar) tasks = tasks.filter((t) => t.id !== draft.task.id);
+        if (b.id === draft.pillar) {
+          const idx = tasks.findIndex((t) => t.id === draft.task.id);
+          tasks =
+            idx >= 0
+              ? tasks.map((t) => (t.id === draft.task.id ? draft.task : t))
+              : [...tasks, draft.task];
+        }
+        return tasks === b.tasks ? b : { ...b, tasks };
+      }),
     );
   }
 
@@ -62,13 +100,28 @@ function Index() {
 
           <div className="grid gap-4 lg:grid-cols-3">
             {boards.map((board) => (
-              <PillarBoard key={board.id} board={board} onToggle={toggle} />
+              <PillarBoard
+                key={board.id}
+                board={board}
+                onToggle={toggle}
+                onNew={openNew}
+                onOpenTask={openTask}
+              />
             ))}
           </div>
         </main>
       </div>
 
       <MobileBottomNav />
+
+      <ObjectiveDialog
+        open={dialogOpen}
+        mode={mode}
+        initialPillar={activePillar}
+        initialTask={activeTask}
+        onOpenChange={setDialogOpen}
+        onSubmit={submit}
+      />
     </div>
   );
 }
