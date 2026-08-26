@@ -46,12 +46,15 @@ export function DashHeader() {
         </div>
 
         <div className="flex min-w-0 items-start justify-end gap-2 lg:max-w-sm lg:justify-self-end">
-          <Quote className="mt-[3px] size-3 shrink-0 text-primary" />
-          <div className="min-w-0">
-            <p className="line-clamp-2 text-right text-[11px] leading-snug text-secondary-foreground italic">
-              “{quote.text}”
-            </p>
-            <p className="label-mono mt-1 text-right">— {quote.author}</p>
+          <div className="flex min-w-0 items-start gap-2 rounded-md border border-border/60 bg-surface/60 py-2 pr-3 pl-3 backdrop-blur-sm">
+            <div className="h-full w-px self-stretch bg-primary/40" aria-hidden="true" />
+            <Quote className="mt-[3px] size-3 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <p className="line-clamp-2 text-right text-[11px] leading-snug text-secondary-foreground italic">
+                “{quote.text}”
+              </p>
+              <p className="label-mono mt-1 text-right">— {quote.author}</p>
+            </div>
           </div>
         </div>
       </div>
