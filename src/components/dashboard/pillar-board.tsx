@@ -106,7 +106,13 @@ export function PillarBoard({
         {tasks.map((task) => (
           <li key={task.id} className="group flex items-start gap-3 px-4 py-3 hover:bg-accent/40">
             <button
-              onClick={() => onToggle(board.id, task.id)}
+              onClick={() =>
+                extra.some((t) => t.id === task.id)
+                  ? setExtra((prev) =>
+                      prev.map((t) => (t.id === task.id ? { ...t, done: !t.done } : t)),
+                    )
+                  : onToggle(board.id, task.id)
+              }
               aria-label={task.done ? "Mark incomplete" : "Mark complete"}
               className={cn(
                 "mt-0.5 grid size-[18px] shrink-0 place-items-center rounded-[5px] border transition-colors",
