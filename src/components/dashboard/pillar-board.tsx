@@ -5,27 +5,30 @@ import type { Board, Pillar, Task } from "@/lib/dash-data";
 
 const THEME: Record<
   Pillar,
-  { text: string; border: string; bg: string; ring: string; icon: typeof ShieldHalf }
+  { text: string; border: string; bg: string; ring: string; glow: string; icon: typeof ShieldHalf }
 > = {
   cyber: {
     text: "text-cyber",
     border: "border-cyber/40",
     bg: "bg-cyber",
-    ring: "focus-visible:border-cyber/60",
+    ring: "focus-visible:border-cyber focus-visible:ring-cyber/20",
+    glow: "hover:shadow-[0_0_18px_-4px_rgba(0,229,255,0.35)] hover:border-cyber/60",
     icon: ShieldHalf,
   },
   gold: {
     text: "text-gold",
     border: "border-gold/40",
     bg: "bg-gold",
-    ring: "focus-visible:border-gold/60",
+    ring: "focus-visible:border-gold focus-visible:ring-gold/20",
+    glow: "hover:shadow-[0_0_18px_-4px_rgba(255,179,0,0.35)] hover:border-gold/60",
     icon: GraduationCap,
   },
   emerald: {
     text: "text-emerald",
     border: "border-emerald/40",
     bg: "bg-emerald",
-    ring: "focus-visible:border-emerald/60",
+    ring: "focus-visible:border-emerald focus-visible:ring-emerald/20",
+    glow: "hover:shadow-[0_0_18px_-4px_rgba(16,185,129,0.35)] hover:border-emerald/60",
     icon: BrainCircuit,
   },
 };
@@ -74,7 +77,7 @@ export function PillarBoard({
           </h2>
           <p className="label-mono mt-0.5 truncate normal-case tracking-normal">{board.subtitle}</p>
         </div>
-        <span className="shrink-0 font-mono text-[11px] text-muted-foreground tabular-nums">
+        <span className="shrink-0 rounded-full border border-border bg-background px-2 py-0.5 font-mono text-[10px] text-muted-foreground tabular-nums">
           {done}/{tasks.length}
         </span>
       </div>
@@ -85,16 +88,17 @@ export function PillarBoard({
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Add objective…"
           className={cn(
-            "min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground",
+            "min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none ring-0 ring-offset-0 transition-all placeholder:text-muted-foreground focus-visible:ring-2",
             theme.ring,
           )}
         />
         <button
           type="submit"
           className={cn(
-            "grid size-9 shrink-0 place-items-center rounded-md border bg-background transition-colors hover:bg-accent",
+            "grid size-9 shrink-0 place-items-center rounded-md border bg-background transition-all hover:bg-accent",
             theme.border,
             theme.text,
+            theme.glow,
           )}
           aria-label={`Add task to ${board.title}`}
         >
@@ -126,7 +130,7 @@ export function PillarBoard({
               <p
                 className={cn(
                   "truncate text-sm",
-                  task.done ? "text-muted-foreground line-through" : "text-foreground",
+                  task.done ? "text-muted-foreground/50 line-through" : "font-medium text-foreground",
                 )}
               >
                 {task.title}
@@ -134,14 +138,14 @@ export function PillarBoard({
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <span
                   className={cn(
-                    "rounded-[3px] border px-1.5 py-0.5 font-mono text-[9px] tracking-[0.12em]",
+                    "rounded-[3px] border bg-accent/40 px-1.5 py-0.5 font-mono text-[9px] tracking-[0.12em] brightness-125",
                     theme.border,
                     theme.text,
                   )}
                 >
                   {task.tag}
                 </span>
-                <span className="font-mono text-[10px] text-muted-foreground">{task.slot}</span>
+                <span className="font-mono text-[9px] text-slate-400">{task.slot}</span>
               </div>
             </div>
           </li>
