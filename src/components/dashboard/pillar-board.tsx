@@ -130,7 +130,7 @@ export function PillarBoard({
               <p
                 className={cn(
                   "truncate text-sm",
-                  task.done ? "text-muted-foreground/80 line-through" : "font-medium text-foreground",
+                  task.done ? "text-muted-foreground/50 line-through" : "font-medium text-foreground",
                 )}
               >
                 {task.title}
