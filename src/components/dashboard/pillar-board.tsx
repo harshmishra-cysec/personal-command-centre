@@ -5,27 +5,30 @@ import type { Board, Pillar, Task } from "@/lib/dash-data";
 
 const THEME: Record<
   Pillar,
-  { text: string; border: string; bg: string; ring: string; icon: typeof ShieldHalf }
+  { text: string; border: string; bg: string; ring: string; glow: string; icon: typeof ShieldHalf }
 > = {
   cyber: {
     text: "text-cyber",
     border: "border-cyber/40",
     bg: "bg-cyber",
-    ring: "focus-visible:border-cyber/60",
+    ring: "focus-visible:border-cyber focus-visible:ring-cyber/20",
+    glow: "hover:shadow-[0_0_18px_-4px_rgba(0,229,255,0.35)] hover:border-cyber/60",
     icon: ShieldHalf,
   },
   gold: {
     text: "text-gold",
     border: "border-gold/40",
     bg: "bg-gold",
-    ring: "focus-visible:border-gold/60",
+    ring: "focus-visible:border-gold focus-visible:ring-gold/20",
+    glow: "hover:shadow-[0_0_18px_-4px_rgba(255,179,0,0.35)] hover:border-gold/60",
     icon: GraduationCap,
   },
   emerald: {
     text: "text-emerald",
     border: "border-emerald/40",
     bg: "bg-emerald",
-    ring: "focus-visible:border-emerald/60",
+    ring: "focus-visible:border-emerald focus-visible:ring-emerald/20",
+    glow: "hover:shadow-[0_0_18px_-4px_rgba(16,185,129,0.35)] hover:border-emerald/60",
     icon: BrainCircuit,
   },
 };
