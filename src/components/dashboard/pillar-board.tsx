@@ -130,7 +130,7 @@ export function PillarBoard({
               <p
                 className={cn(
                   "truncate text-sm",
-                  task.done ? "text-muted-foreground line-through" : "text-foreground",
+                  task.done ? "text-muted-foreground/80 line-through" : "font-medium text-foreground",
                 )}
               >
                 {task.title}
@@ -138,14 +138,14 @@ export function PillarBoard({
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <span
                   className={cn(
-                    "rounded-[3px] border px-1.5 py-0.5 font-mono text-[9px] tracking-[0.12em]",
+                    "rounded-[3px] border bg-accent/40 px-1.5 py-0.5 font-mono text-[9px] tracking-[0.12em] brightness-125",
                     theme.border,
                     theme.text,
                   )}
                 >
                   {task.tag}
                 </span>
-                <span className="font-mono text-[10px] text-muted-foreground">{task.slot}</span>
+                <span className="font-mono text-[9px] text-slate-400">{task.slot}</span>
               </div>
             </div>
           </li>
