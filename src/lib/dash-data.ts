@@ -6,10 +6,10 @@ export type Task = {
   id: string;
   tag: string;
   title: string;
-  description?: string;
+  description?: string | undefined;
   priority: Priority;
   slot: string;
-  date?: string;
+  date?: string | undefined;
   done: boolean;
 };
 
