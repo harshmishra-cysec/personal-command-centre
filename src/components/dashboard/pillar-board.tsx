@@ -77,7 +77,7 @@ export function PillarBoard({
           </h2>
           <p className="label-mono mt-0.5 truncate normal-case tracking-normal">{board.subtitle}</p>
         </div>
-        <span className="shrink-0 font-mono text-[11px] text-muted-foreground tabular-nums">
+        <span className="shrink-0 rounded-full border border-border bg-background px-2 py-0.5 font-mono text-[10px] text-muted-foreground tabular-nums">
           {done}/{tasks.length}
         </span>
       </div>
