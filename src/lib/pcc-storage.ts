@@ -101,6 +101,18 @@ function normalizeTask(rawTask: Record<string, unknown>): Task {
     slot: typeof rawTask.slot === "string" ? rawTask.slot : undefined,
     date: typeof rawTask.date === "string" ? rawTask.date : undefined,
     done,
+    node_id:
+      typeof rawTask.node_id === "string"
+        ? rawTask.node_id
+        : typeof rawTask.nodeId === "string"
+          ? rawTask.nodeId
+          : undefined,
+    checklist_item_id:
+      typeof rawTask.checklist_item_id === "string"
+        ? rawTask.checklist_item_id
+        : typeof rawTask.checklistItemId === "string"
+          ? rawTask.checklistItemId
+          : undefined,
   };
 }
 
@@ -234,7 +246,7 @@ export function resetIntroSeen(): void {
    ========================================================================= */
 
 export function toSupabaseTaskPayload(task: Task, pillar: Pillar): Record<string, unknown> {
-  return {
+  const payload: Record<string, unknown> = {
     id: task.id,
     title: task.title,
     tag: task.tag,
@@ -247,6 +259,13 @@ export function toSupabaseTaskPayload(task: Task, pillar: Pillar): Record<string
     slot: task.slot || null,
     date: task.date || null,
   };
+  if (task.node_id) {
+    payload.node_id = task.node_id;
+  }
+  if (task.checklist_item_id) {
+    payload.checklist_item_id = task.checklist_item_id;
+  }
+  return payload;
 }
 
 export function getTaskPillar(row: Record<string, unknown>, fallback: Pillar = "cyber"): Pillar {
@@ -281,6 +300,19 @@ export function fromSupabaseTaskPayload(row: Record<string, unknown>): Task {
           ? durationMinutes
           : 0;
 
+  const node_id =
+    typeof row.node_id === "string"
+      ? row.node_id
+      : typeof row.nodeId === "string"
+        ? row.nodeId
+        : undefined;
+  const checklist_item_id =
+    typeof row.checklist_item_id === "string"
+      ? row.checklist_item_id
+      : typeof row.checklistItemId === "string"
+        ? row.checklistItemId
+        : undefined;
+
   return {
     id: String(row.id),
     title: String(row.title || "Untitled Objective"),
@@ -295,6 +327,8 @@ export function fromSupabaseTaskPayload(row: Record<string, unknown>): Task {
     actualFocusMinutes,
     slot: typeof row.slot === "string" ? row.slot : undefined,
     date: typeof row.date === "string" ? row.date : undefined,
+    node_id,
+    checklist_item_id,
   };
 }
 

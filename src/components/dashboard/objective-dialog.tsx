@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,7 +18,14 @@ import {
   type Priority,
   type Task,
 } from "@/lib/dash-data";
-import { Clock, Hourglass } from "lucide-react";
+import {
+  loadRoadmaps,
+  pillarToTrackId,
+  type RoadmapNode,
+  type TrackRoadmap,
+  type TrackId,
+} from "@/lib/roadmap-data";
+import { Clock, Hourglass, ListCheck, GitCommit, CheckCircle2, ChevronDown } from "lucide-react";
 
 const PILLARS: Pillar[] = ["cyber", "gold", "emerald"];
 const PRIORITIES: Priority[] = ["critical", "normal", "low"];
@@ -48,6 +55,7 @@ export function ObjectiveDialog({
   mode,
   initialPillar,
   initialTask,
+  allActiveTasks = [],
   onOpenChange,
   onSubmit,
   onDelete,
@@ -56,6 +64,7 @@ export function ObjectiveDialog({
   mode: "create" | "edit";
   initialPillar: Pillar;
   initialTask?: Task | null;
+  allActiveTasks?: Task[];
   onOpenChange: (open: boolean) => void;
   onSubmit: (draft: ObjectiveDraft, originPillar: Pillar) => void;
   onDelete?: (pillar: Pillar, taskId: string) => void;
@@ -69,6 +78,63 @@ export function ObjectiveDialog({
   const [customMinutesInput, setCustomMinutesInput] = useState("45");
   const [date, setDate] = useState("");
   const [tag, setTag] = useState("STUDY");
+
+  // Roadmap linking state
+  const [selectedNodeId, setSelectedNodeId] = useState<string>("");
+  const [selectedChecklistItemId, setSelectedChecklistItemId] = useState<string>("");
+  const [roadmapsState, setRoadmapsState] = useState<Record<TrackId, TrackRoadmap>>(() =>
+    loadRoadmaps(),
+  );
+
+  // Reload roadmaps whenever dialog opens
+  useEffect(() => {
+    if (open) {
+      setRoadmapsState(loadRoadmaps());
+    }
+  }, [open]);
+
+  // Derive active roadmap nodes for current track
+  const currentTrackId = pillarToTrackId(pillar);
+  const currentTrack = roadmapsState[currentTrackId];
+  const activeMilestoneNodes = useMemo(() => {
+    if (!currentTrack?.nodes) return [];
+    return currentTrack.nodes.filter(
+      (n) => n.status !== "locked" || (n.subTasks && n.subTasks.length > 0),
+    );
+  }, [currentTrack]);
+
+  // Selected node object
+  const selectedNode = useMemo(() => {
+    if (!selectedNodeId) return null;
+    return activeMilestoneNodes.find((n) => n.id === selectedNodeId) || null;
+  }, [selectedNodeId, activeMilestoneNodes]);
+
+  // Set of checklist IDs already active in Today tasks (excluding currently edited task)
+  const activeTaskChecklistIds = useMemo(() => {
+    const ids = new Set<string>();
+    allActiveTasks.forEach((t) => {
+      if (t.checklist_item_id && t.id !== initialTask?.id) {
+        ids.add(t.checklist_item_id);
+      }
+    });
+    return ids;
+  }, [allActiveTasks, initialTask]);
+
+  // Available uncompleted checklist items for selected node
+  const availableChecklistItems = useMemo(() => {
+    if (!selectedNode?.subTasks) return [];
+    return selectedNode.subTasks.filter((item) => {
+      // If editing this specific task, allow its currently selected checklist item
+      if (initialTask && item.id === initialTask.checklist_item_id) {
+        return true;
+      }
+      // Must not be completed in roadmap
+      if (item.completed) return false;
+      // Must not already be present in active Today tasks
+      if (activeTaskChecklistIds.has(item.id)) return false;
+      return true;
+    });
+  }, [selectedNode, initialTask, activeTaskChecklistIds]);
 
   useEffect(() => {
     if (!open) return;
@@ -85,7 +151,39 @@ export function ObjectiveDialog({
 
     setDate(initialTask?.date ?? new Date().toISOString().slice(0, 10));
     setTag(initialTask?.tag ?? "STUDY");
+
+    setSelectedNodeId(initialTask?.node_id ?? "");
+    setSelectedChecklistItemId(initialTask?.checklist_item_id ?? "");
   }, [open, initialPillar, initialTask]);
+
+  // When track / pillar changes, reset roadmap selections
+  const handlePillarChange = (newPillar: Pillar) => {
+    setPillar(newPillar);
+    setSelectedNodeId("");
+    setSelectedChecklistItemId("");
+  };
+
+  // When a milestone node is selected
+  const handleNodeSelect = (nodeId: string) => {
+    setSelectedNodeId(nodeId);
+    setSelectedChecklistItemId("");
+  };
+
+  // When a checklist item is selected, populate title and attach node_id & checklist_item_id
+  const handleChecklistItemSelect = (itemId: string) => {
+    setSelectedChecklistItemId(itemId);
+    if (!itemId) return;
+
+    const item = selectedNode?.subTasks?.find((st) => st.id === itemId);
+    if (item) {
+      setTitle(item.title);
+      if (tag === "STUDY") {
+        if (pillar === "cyber") setTag("LAB");
+        else if (pillar === "gold") setTag("CLASS");
+        else setTag("BUILD");
+      }
+    }
+  };
 
   const handleSelectPreset = (minutes: number) => {
     setIsCustomDuration(false);
@@ -123,6 +221,8 @@ export function ObjectiveDialog({
           date: date || undefined,
           tag,
           done: initialTask?.done ?? false,
+          node_id: selectedNodeId || undefined,
+          checklist_item_id: selectedChecklistItemId || undefined,
         },
       },
       initialPillar,
@@ -143,6 +243,140 @@ export function ObjectiveDialog({
         </DialogHeader>
 
         <form onSubmit={submit} className="space-y-4">
+          {/* Track Selection */}
+          <div className="space-y-1.5">
+            <span className="label-mono block">Track</span>
+            <div className="grid grid-cols-3 gap-2">
+              {PILLARS.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => handlePillarChange(p)}
+                  className={cn(
+                    "rounded-md border px-2 py-2 font-mono text-[10px] tracking-wide transition-colors",
+                    pillar === p
+                      ? PILLAR_PICK[p]
+                      : "border-border bg-background text-muted-foreground hover:bg-accent",
+                  )}
+                >
+                  {BOARD_META[p].title}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Dynamic Roadmap Milestone & Checklist Selection */}
+          <div className="rounded-lg border border-border/80 bg-[#070B12] p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="label-mono flex items-center gap-1.5 text-foreground font-semibold">
+                <GitCommit className="size-3.5 text-primary" />
+                LINK TO ROADMAP MILESTONE / CHECKLIST
+              </span>
+              <span className="font-mono text-[10px] text-muted-foreground tracking-wider uppercase">
+                (Optional)
+              </span>
+            </div>
+
+            {/* First Dropdown: Milestone Nodes */}
+            <div className="space-y-1">
+              <label
+                htmlFor="roadmap-node-select"
+                className="font-mono text-[10px] text-muted-foreground tracking-wider block"
+              >
+                1. SELECT MILESTONE NODE
+              </label>
+              <div className="relative">
+                <select
+                  id="roadmap-node-select"
+                  value={selectedNodeId}
+                  onChange={(e) => handleNodeSelect(e.target.value)}
+                  className={cn(
+                    field,
+                    "font-mono text-xs pr-8 bg-[#0D131F] border-border/70 text-foreground cursor-pointer appearance-none",
+                  )}
+                >
+                  <option value="">-- No Roadmap Milestone Linked --</option>
+                  {activeMilestoneNodes.map((node) => {
+                    const uncompletedCount = (node.subTasks || []).filter(
+                      (st) => !st.completed && !activeTaskChecklistIds.has(st.id),
+                    ).length;
+                    return (
+                      <option key={node.id} value={node.id}>
+                        [{node.sequence}] {node.title} ({uncompletedCount} available)
+                      </option>
+                    );
+                  })}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+              </div>
+            </div>
+
+            {/* Second Dropdown (Cascading): Uncompleted Checklist Items */}
+            {selectedNodeId && (
+              <div className="space-y-1 pt-1 border-t border-white/5 animate-in fade-in-50 duration-200">
+                <label
+                  htmlFor="roadmap-item-select"
+                  className="font-mono text-[10px] text-muted-foreground tracking-wider flex items-center justify-between"
+                >
+                  <span className="flex items-center gap-1">
+                    <ListCheck className="size-3 text-cyan-400" />
+                    2. SELECT UNCOMPLETED CHECKLIST ITEM
+                  </span>
+                  {availableChecklistItems.length === 0 && (
+                    <span className="text-amber-400 text-[10px]">
+                      All items completed or in queue
+                    </span>
+                  )}
+                </label>
+
+                {availableChecklistItems.length > 0 ? (
+                  <div className="relative">
+                    <select
+                      id="roadmap-item-select"
+                      value={selectedChecklistItemId}
+                      onChange={(e) => handleChecklistItemSelect(e.target.value)}
+                      className={cn(
+                        field,
+                        "font-mono text-xs pr-8 bg-[#0D131F] border-border/70 text-foreground cursor-pointer appearance-none",
+                      )}
+                    >
+                      <option value="">-- Select an item to autofill title --</option>
+                      {availableChecklistItems.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.title}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="rounded border border-amber-500/20 bg-amber-950/20 px-3 py-2 font-mono text-xs text-amber-300/90 flex items-center gap-2">
+                    <CheckCircle2 className="size-3.5 text-amber-400 shrink-0" />
+                    <span>No uncompleted checklist items available for this milestone.</span>
+                  </div>
+                )}
+
+                {selectedChecklistItemId && (
+                  <div className="flex items-center justify-between pt-1 text-[11px] font-mono text-emerald-400">
+                    <span className="flex items-center gap-1">
+                      <CheckCircle2 className="size-3" />
+                      Linked to roadmap checklist
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedChecklistItemId("");
+                      }}
+                      className="text-muted-foreground hover:text-foreground text-[10px] underline cursor-pointer"
+                    >
+                      Unlink
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="space-y-1.5">
             <label className="label-mono block" htmlFor="obj-title">
               Objective title
@@ -170,28 +404,6 @@ export function ObjectiveDialog({
               placeholder="Lab room, CVE references, chapter numbers…"
               className={cn(field, "resize-none")}
             />
-          </div>
-
-          {/* Track Selection */}
-          <div className="space-y-1.5">
-            <span className="label-mono block">Track</span>
-            <div className="grid grid-cols-3 gap-2">
-              {PILLARS.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPillar(p)}
-                  className={cn(
-                    "rounded-md border px-2 py-2 font-mono text-[10px] tracking-wide transition-colors",
-                    pillar === p
-                      ? PILLAR_PICK[p]
-                      : "border-border bg-background text-muted-foreground hover:bg-accent",
-                  )}
-                >
-                  {BOARD_META[p].title}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Priority Selection */}

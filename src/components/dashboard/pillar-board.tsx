@@ -1,4 +1,13 @@
-import { Check, Plus, ShieldHalf, GraduationCap, BrainCircuit, Play, Clock } from "lucide-react";
+import {
+  Check,
+  Plus,
+  ShieldHalf,
+  GraduationCap,
+  BrainCircuit,
+  Play,
+  Clock,
+  GitCommit,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDuration, type Board, type Pillar, type Task } from "@/lib/dash-data";
 
@@ -184,6 +193,15 @@ export function PillarBoard({
                   )}
 
                   <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {task.checklist_item_id && (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-[3px] border border-cyan-400/40 bg-cyan-950/40 px-1.5 py-0.5 font-mono text-[9px] tracking-[0.1em] text-cyan-300"
+                        title="Linked to Roadmap Checklist"
+                      >
+                        <GitCommit className="size-2.5 text-cyan-400" />
+                        ROADMAP
+                      </span>
+                    )}
                     {critical && (
                       <span className="rounded-[3px] border border-red-500/40 bg-red-500/10 px-1.5 py-0.5 font-mono text-[9px] tracking-[0.12em] text-red-400">
                         CRITICAL

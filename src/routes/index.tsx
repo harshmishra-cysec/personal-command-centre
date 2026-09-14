@@ -25,6 +25,7 @@ import {
   usePccRealtime,
   type SyncStatus,
 } from "@/lib/pcc-storage";
+import { setRoadmapChecklistItemCompletion, pillarToTrackId } from "@/lib/roadmap-data";
 import { computeFocusHoursFromBoards } from "@/lib/stats-data";
 
 export const Route = createFileRoute("/")({
@@ -119,6 +120,8 @@ function Index() {
 
   function toggle(boardId: Pillar, taskId: string) {
     let updatedTaskForCloud: Task | null = null;
+    let targetTask: Task | null = null;
+
     setBoards((prev) =>
       prev.map((b) =>
         b.id === boardId
@@ -126,6 +129,7 @@ function Index() {
               ...b,
               tasks: b.tasks.map((t) => {
                 if (t.id === taskId) {
+                  targetTask = t;
                   const nextDone = !t.done;
                   const updated: Task = {
                     ...t,
@@ -147,6 +151,18 @@ function Index() {
 
     if (updatedTaskForCloud) {
       updateTaskInSupabase(updatedTaskForCloud, boardId);
+
+      // Bidirectional sync with Roadmap checklist
+      const taskObj: Task = updatedTaskForCloud;
+      if (taskObj.node_id && taskObj.checklist_item_id) {
+        const trackId = pillarToTrackId(boardId);
+        setRoadmapChecklistItemCompletion(
+          trackId,
+          taskObj.node_id,
+          taskObj.checklist_item_id,
+          taskObj.done,
+        );
+      }
     }
   }
 
@@ -194,6 +210,18 @@ function Index() {
 
     if (updatedTaskForCloud) {
       updateTaskInSupabase(updatedTaskForCloud, pillar);
+
+      // Bidirectional sync with Roadmap checklist
+      const taskObj: Task = updatedTaskForCloud;
+      if (taskObj.node_id && taskObj.checklist_item_id) {
+        const trackId = pillarToTrackId(pillar);
+        setRoadmapChecklistItemCompletion(
+          trackId,
+          taskObj.node_id,
+          taskObj.checklist_item_id,
+          true,
+        );
+      }
     }
   }
 
@@ -246,15 +274,45 @@ function Index() {
     } else {
       updateTaskInSupabase(draft.task, draft.pillar);
     }
+
+    // If task was already completed or updated, sync linked roadmap item
+    if (draft.task.node_id && draft.task.checklist_item_id) {
+      const trackId = pillarToTrackId(draft.pillar);
+      setRoadmapChecklistItemCompletion(
+        trackId,
+        draft.task.node_id,
+        draft.task.checklist_item_id,
+        draft.task.done,
+      );
+    }
   }
 
   function remove(boardId: Pillar, taskId: string) {
+    let taskToRemove: Task | null = null;
     setBoards((prev) =>
-      prev.map((b) =>
-        b.id === boardId ? { ...b, tasks: b.tasks.filter((t) => t.id !== taskId) } : b,
-      ),
+      prev.map((b) => {
+        if (b.id === boardId) {
+          taskToRemove = b.tasks.find((t) => t.id === taskId) || null;
+          return { ...b, tasks: b.tasks.filter((t) => t.id !== taskId) };
+        }
+        return b;
+      }),
     );
+
     deleteTaskFromSupabase(taskId);
+
+    // If removing a linked task that was completed, revert checklist item completion
+    const linkedTask: Task | null = taskToRemove;
+    if (linkedTask && linkedTask.node_id && linkedTask.checklist_item_id) {
+      const trackId = pillarToTrackId(boardId);
+      setRoadmapChecklistItemCompletion(
+        trackId,
+        linkedTask.node_id,
+        linkedTask.checklist_item_id,
+        false,
+      );
+    }
+
     setDialogOpen(false);
   }
 
@@ -314,6 +372,7 @@ function Index() {
         mode={mode}
         initialPillar={activePillar}
         initialTask={activeTask}
+        allActiveTasks={boards.flatMap((b) => b.tasks)}
         onOpenChange={setDialogOpen}
         onSubmit={submit}
         onDelete={remove}
