@@ -1,10 +1,25 @@
 import { useEffect, useState } from "react";
 import { Quote, Terminal } from "lucide-react";
 import { QUOTES } from "@/lib/dash-data";
+import { getSyncStatus, subscribeSyncStatus, type SyncStatus } from "@/lib/pcc-storage";
 
-export function DashHeader({ onReplayIntro }: { onReplayIntro?: () => void }) {
+export function DashHeader({
+  onReplayIntro,
+  syncStatus: propSyncStatus,
+}: {
+  onReplayIntro?: () => void;
+  syncStatus?: SyncStatus;
+}) {
   const [now, setNow] = useState<Date | null>(null);
   const [quoteIndex, setQuoteIndex] = useState(0);
+  const [internalSyncStatus, setInternalSyncStatus] = useState<SyncStatus>(() => getSyncStatus());
+
+  useEffect(() => {
+    const unsub = subscribeSyncStatus((s) => setInternalSyncStatus(s));
+    return unsub;
+  }, []);
+
+  const syncStatus = propSyncStatus || internalSyncStatus;
 
   useEffect(() => {
     setNow(new Date());
@@ -48,9 +63,37 @@ export function DashHeader({ onReplayIntro }: { onReplayIntro?: () => void }) {
                 PERSONAL COMMAND CENTER
               </h1>
             </div>
-            <p className="label-mono mt-0.5 truncate text-muted-foreground group-hover:text-foreground transition-colors">
-              operator // harsh · status: engaged
-            </p>
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              <p className="label-mono truncate text-muted-foreground group-hover:text-foreground transition-colors">
+                operator // harsh · status: engaged
+              </p>
+              <span className="text-muted-foreground/40 text-[10px]">·</span>
+              {syncStatus === "synced" ? (
+                <span
+                  className="inline-flex items-center gap-1.5 font-mono text-[9.5px] text-emerald-400 font-semibold tracking-wider"
+                  title="Connected & synced with Supabase cloud"
+                >
+                  <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" />
+                  CLOUD SYNCED // SUPABASE
+                </span>
+              ) : syncStatus === "syncing" ? (
+                <span
+                  className="inline-flex items-center gap-1.5 font-mono text-[9.5px] text-cyan-400 tracking-wider"
+                  title="Syncing data with Supabase..."
+                >
+                  <span className="size-1.5 rounded-full bg-cyan-400 animate-ping" />
+                  SYNCING...
+                </span>
+              ) : (
+                <span
+                  className="inline-flex items-center gap-1.5 font-mono text-[9.5px] text-amber-400/90 tracking-wider"
+                  title="Local storage fallback (offline / local only)"
+                >
+                  <span className="size-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
+                  LOCAL ONLY // OFFLINE
+                </span>
+              )}
+            </div>
           </button>
         </div>
 

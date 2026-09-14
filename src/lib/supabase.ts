@@ -1,10 +1,21 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL || "";
+const supabaseAnonKey: string = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase credentials missing. Falling back to local state.');
-}
+export const isSupabaseConfigured =
+  Boolean(supabaseUrl) &&
+  Boolean(supabaseAnonKey) &&
+  supabaseUrl.startsWith("http") &&
+  !supabaseUrl.includes("placeholder");
 
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
+export const supabase = createClient(
+  isSupabaseConfigured ? supabaseUrl : "https://placeholder-project.supabase.co",
+  isSupabaseConfigured ? supabaseAnonKey : "placeholder-anon-key",
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+  },
+);

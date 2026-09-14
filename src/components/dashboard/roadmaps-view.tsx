@@ -25,6 +25,7 @@ import {
   type TrackId,
   type TrackRoadmap,
 } from "@/lib/roadmap-data";
+import { upsertRoadmapTrackToSupabase } from "@/lib/pcc-storage";
 import { MilestoneNodeCard } from "@/components/dashboard/roadmaps/milestone-node-card";
 import { MilestoneDetailModal } from "@/components/dashboard/roadmaps/milestone-detail-modal";
 import { AddMilestoneModal } from "@/components/dashboard/roadmaps/add-milestone-modal";
@@ -81,6 +82,7 @@ export function RoadmapsView() {
         },
       };
       saveRoadmaps(nextRoadmaps);
+      upsertRoadmapTrackToSupabase(updatedNode.trackId, updatedNodes);
       return nextRoadmaps;
     });
     setSelectedNode(updatedNode);
@@ -100,6 +102,7 @@ export function RoadmapsView() {
         },
       };
       saveRoadmaps(nextRoadmaps);
+      upsertRoadmapTrackToSupabase(trackId, updatedNodes);
       return nextRoadmaps;
     });
     setSelectedNode(null);
@@ -111,14 +114,16 @@ export function RoadmapsView() {
       const track = prev[newNode.trackId];
       if (!track) return prev;
 
+      const updatedNodes = [...track.nodes, newNode];
       const nextRoadmaps = {
         ...prev,
         [newNode.trackId]: {
           ...track,
-          nodes: [...track.nodes, newNode],
+          nodes: updatedNodes,
         },
       };
       saveRoadmaps(nextRoadmaps);
+      upsertRoadmapTrackToSupabase(newNode.trackId, updatedNodes);
       return nextRoadmaps;
     });
     setActiveTrackId(newNode.trackId);
@@ -132,6 +137,9 @@ export function RoadmapsView() {
     ) {
       setRoadmaps(DEFAULT_ROADMAPS);
       saveRoadmaps(DEFAULT_ROADMAPS);
+      upsertRoadmapTrackToSupabase("cyber", DEFAULT_ROADMAPS.cyber.nodes);
+      upsertRoadmapTrackToSupabase("academics", DEFAULT_ROADMAPS.academics.nodes);
+      upsertRoadmapTrackToSupabase("aiml", DEFAULT_ROADMAPS.aiml.nodes);
     }
   };
 

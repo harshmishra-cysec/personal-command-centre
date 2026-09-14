@@ -11,7 +11,19 @@ import { StatsView } from "@/components/dashboard/stats-view";
 import { IntroScreen } from "@/components/dashboard/IntroScreen";
 import { TaskStopwatchModal } from "@/components/dashboard/task-stopwatch-modal";
 import { BOARDS, type Pillar, type Task } from "@/lib/dash-data";
-import { loadBoards, readStreak, recordCompletion, saveBoards } from "@/lib/pcc-storage";
+import {
+  deleteTaskFromSupabase,
+  getSyncStatus,
+  insertTaskToSupabase,
+  loadBoards,
+  readStreak,
+  recordCompletion,
+  saveBoards,
+  subscribeSyncStatus,
+  syncAllFromSupabase,
+  updateTaskInSupabase,
+  type SyncStatus,
+} from "@/lib/pcc-storage";
 import { computeFocusHoursFromBoards } from "@/lib/stats-data";
 
 export const Route = createFileRoute("/")({
@@ -43,6 +55,7 @@ function Index() {
   const [activeTab, setActiveTab] = useState<TabView>("today");
   const [boards, setBoards] = useState(BOARDS);
   const [streak, setStreak] = useState(0);
+  const [syncStatus, setSyncStatusState] = useState<SyncStatus>(() => getSyncStatus());
   const hydrated = useRef(false);
 
   // Task Dialog State
@@ -57,11 +70,26 @@ function Index() {
     pillar: Pillar;
   } | null>(null);
 
-  // Load persisted tasks after mount
+  // Listen to live sync status updates
+  useEffect(() => {
+    const unsub = subscribeSyncStatus(setSyncStatusState);
+    return unsub;
+  }, []);
+
+  // Hydrate local state first, then sync from Supabase cloud
   useEffect(() => {
     setBoards(loadBoards());
     setStreak(readStreak());
     hydrated.current = true;
+
+    syncAllFromSupabase()
+      .then((synced) => {
+        setBoards(synced.boards);
+        setStreak(synced.streak);
+      })
+      .catch((err) => {
+        console.warn("[PCC Supabase] Initial mount sync failed:", err);
+      });
   }, []);
 
   // Sync every change back to localStorage and update the streak
@@ -83,6 +111,7 @@ function Index() {
   };
 
   function toggle(boardId: Pillar, taskId: string) {
+    let updatedTaskForCloud: Task | null = null;
     setBoards((prev) =>
       prev.map((b) =>
         b.id === boardId
@@ -91,7 +120,7 @@ function Index() {
               tasks: b.tasks.map((t) => {
                 if (t.id === taskId) {
                   const nextDone = !t.done;
-                  return {
+                  const updated: Task = {
                     ...t,
                     done: nextDone,
                     actualFocusMinutes:
@@ -99,6 +128,8 @@ function Index() {
                         ? t.durationMinutes || 45
                         : t.actualFocusMinutes,
                   };
+                  updatedTaskForCloud = updated;
+                  return updated;
                 }
                 return t;
               }),
@@ -106,6 +137,10 @@ function Index() {
           : b,
       ),
     );
+
+    if (updatedTaskForCloud) {
+      updateTaskInSupabase(updatedTaskForCloud, boardId);
+    }
   }
 
   function openNew(boardId: Pillar) {
@@ -127,44 +162,60 @@ function Index() {
   }
 
   function handleFinishTimerTask(pillar: Pillar, taskId: string, elapsedMinutes: number) {
+    let updatedTaskForCloud: Task | null = null;
     setBoards((prev) =>
       prev.map((b) =>
         b.id === pillar
           ? {
               ...b,
-              tasks: b.tasks.map((t) =>
-                t.id === taskId
-                  ? {
-                      ...t,
-                      done: true,
-                      actualFocusMinutes: (t.actualFocusMinutes || 0) + elapsedMinutes,
-                    }
-                  : t,
-              ),
+              tasks: b.tasks.map((t) => {
+                if (t.id === taskId) {
+                  const updated: Task = {
+                    ...t,
+                    done: true,
+                    actualFocusMinutes: (t.actualFocusMinutes || 0) + elapsedMinutes,
+                  };
+                  updatedTaskForCloud = updated;
+                  return updated;
+                }
+                return t;
+              }),
             }
           : b,
       ),
     );
+
+    if (updatedTaskForCloud) {
+      updateTaskInSupabase(updatedTaskForCloud, pillar);
+    }
   }
 
   function handleUpdateFocusMinutes(pillar: Pillar, taskId: string, elapsedMinutes: number) {
+    let updatedTaskForCloud: Task | null = null;
     setBoards((prev) =>
       prev.map((b) =>
         b.id === pillar
           ? {
               ...b,
-              tasks: b.tasks.map((t) =>
-                t.id === taskId
-                  ? {
-                      ...t,
-                      actualFocusMinutes: (t.actualFocusMinutes || 0) + elapsedMinutes,
-                    }
-                  : t,
-              ),
+              tasks: b.tasks.map((t) => {
+                if (t.id === taskId) {
+                  const updated: Task = {
+                    ...t,
+                    actualFocusMinutes: (t.actualFocusMinutes || 0) + elapsedMinutes,
+                  };
+                  updatedTaskForCloud = updated;
+                  return updated;
+                }
+                return t;
+              }),
             }
           : b,
       ),
     );
+
+    if (updatedTaskForCloud) {
+      updateTaskInSupabase(updatedTaskForCloud, pillar);
+    }
   }
 
   function submit(draft: ObjectiveDraft, originPillar: Pillar) {
@@ -182,6 +233,12 @@ function Index() {
         return tasks === b.tasks ? b : { ...b, tasks };
       }),
     );
+
+    if (mode === "create") {
+      insertTaskToSupabase(draft.task, draft.pillar);
+    } else {
+      updateTaskInSupabase(draft.task, draft.pillar);
+    }
   }
 
   function remove(boardId: Pillar, taskId: string) {
@@ -190,6 +247,7 @@ function Index() {
         b.id === boardId ? { ...b, tasks: b.tasks.filter((t) => t.id !== taskId) } : b,
       ),
     );
+    deleteTaskFromSupabase(taskId);
     setDialogOpen(false);
   }
 
@@ -205,7 +263,7 @@ function Index() {
       />
 
       <div className="grid-backdrop flex min-w-0 flex-1 flex-col">
-        <DashHeader onReplayIntro={handleReplayIntro} />
+        <DashHeader onReplayIntro={handleReplayIntro} syncStatus={syncStatus} />
 
         <main className="flex-1 space-y-4 px-4 pt-4 pb-24 lg:px-6 lg:pb-8">
           {activeTab === "today" && (

@@ -31,6 +31,7 @@ import {
   type RealityQuote,
   type WasteCostOption,
 } from "@/lib/reality-data";
+import { persistUserStatsToSupabase, readStreak } from "@/lib/pcc-storage";
 
 interface RealityCheckViewProps {
   onNavigateToToday?: () => void;
@@ -43,6 +44,11 @@ export function RealityCheckView({ onNavigateToToday }: RealityCheckViewProps) {
   // Intercept streak tracking
   const [intercepts, setIntercepts] = useState<number>(() => loadInterceptsCount());
   const [interceptLogged, setInterceptLogged] = useState(false);
+
+  // Sync latest count on mount
+  useEffect(() => {
+    setIntercepts(loadInterceptsCount());
+  }, []);
 
   // Mode A: Emergency 3-Step Flow State
   const [emergencyStep, setEmergencyStep] = useState<1 | 2 | 3>(1);
@@ -59,9 +65,10 @@ export function RealityCheckView({ onNavigateToToday }: RealityCheckViewProps) {
   const [isTimerCompleted, setIsTimerCompleted] = useState<boolean>(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Sync intercepts to localStorage
+  // Sync intercepts to localStorage and Supabase user_stats
   useEffect(() => {
     saveInterceptsCount(intercepts);
+    persistUserStatsToSupabase(readStreak(), intercepts).catch(() => {});
   }, [intercepts]);
 
   // Timer countdown hook
