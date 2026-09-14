@@ -121,11 +121,11 @@ const INTERCEPTS_KEY = "pcc_intercepts";
 export function loadInterceptsCount(): number {
   try {
     const raw = window.localStorage.getItem(INTERCEPTS_KEY);
-    if (!raw) return 12; // Initial baseline realistic count
+    if (!raw || raw === "12") return 0; // Clean zero state default
     const parsed = parseInt(raw, 10);
-    return isNaN(parsed) ? 12 : parsed;
+    return isNaN(parsed) ? 0 : parsed;
   } catch {
-    return 12;
+    return 0;
   }
 }
 
