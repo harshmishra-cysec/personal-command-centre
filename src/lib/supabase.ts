@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env['VITE_SUPABASE_URL'] as string;
-const supabaseAnonKey = import.meta.env['VITE_SUPABASE_ANON_KEY'] as string;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 export const isSupabaseConfigured = Boolean(
   supabaseUrl &&
@@ -10,7 +10,24 @@ export const isSupabaseConfigured = Boolean(
   !supabaseUrl.includes('placeholder')
 );
 
-export const supabase = createClient(
-  isSupabaseConfigured ? supabaseUrl : 'https://placeholder.supabase.co',
-  isSupabaseConfigured ? supabaseAnonKey : 'placeholder-anon-key'
-);
+// Reuse the existing client on the window to prevent Vite HMR socket conflicts
+const globalAny = globalThis as any;
+
+export const supabase =
+  globalAny.__supabaseInstance ||
+  (globalAny.__supabaseInstance = createClient(
+    isSupabaseConfigured ? supabaseUrl : 'https://placeholder.supabase.co',
+    isSupabaseConfigured ? supabaseAnonKey : 'placeholder-anon-key',
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10,
+        },
+      },
+    }
+  ));

@@ -78,11 +78,11 @@ export function DashHeader({
                 </span>
               ) : syncStatus === "syncing" ? (
                 <span
-                  className="inline-flex items-center gap-1.5 font-mono text-[9.5px] text-cyan-400 tracking-wider"
-                  title="Syncing data with Supabase..."
+                  className="inline-flex items-center gap-1.5 font-mono text-[9.5px] text-cyan-400 font-semibold tracking-wider"
+                  title="Realtime sync in-flight..."
                 >
-                  <span className="size-1.5 rounded-full bg-cyan-400 animate-ping" />
-                  SYNCING...
+                  <span className="size-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)] animate-ping" />
+                  SYNC IN-FLIGHT
                 </span>
               ) : (
                 <span
