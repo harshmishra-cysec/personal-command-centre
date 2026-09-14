@@ -42,6 +42,24 @@ export function RoadmapsView() {
     saveRoadmaps(roadmaps);
   }, [roadmaps]);
 
+  // Listen for realtime roadmap track updates from Supabase
+  useEffect(() => {
+    const handleRemoteRoadmap = (e: Event) => {
+      const custom = e as CustomEvent<{ trackId: TrackId; nodes: RoadmapNode[] }>;
+      if (custom.detail?.trackId && custom.detail?.nodes) {
+        setRoadmaps((prev) => ({
+          ...prev,
+          [custom.detail.trackId]: {
+            ...prev[custom.detail.trackId],
+            nodes: custom.detail.nodes,
+          },
+        }));
+      }
+    };
+    window.addEventListener("pcc-roadmaps-updated", handleRemoteRoadmap);
+    return () => window.removeEventListener("pcc-roadmaps-updated", handleRemoteRoadmap);
+  }, []);
+
   const activeTrack = roadmaps[activeTrackId] ||
     roadmaps.cyber || {
       trackId: activeTrackId,

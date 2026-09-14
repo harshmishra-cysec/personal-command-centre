@@ -45,9 +45,18 @@ export function RealityCheckView({ onNavigateToToday }: RealityCheckViewProps) {
   const [intercepts, setIntercepts] = useState<number>(() => loadInterceptsCount());
   const [interceptLogged, setInterceptLogged] = useState(false);
 
-  // Sync latest count on mount
+  // Sync latest count on mount and listen for realtime updates
   useEffect(() => {
     setIntercepts(loadInterceptsCount());
+
+    const handleRemoteIntercepts = (e: Event) => {
+      const custom = e as CustomEvent<number>;
+      if (typeof custom.detail === "number") {
+        setIntercepts(custom.detail);
+      }
+    };
+    window.addEventListener("pcc-intercepts-updated", handleRemoteIntercepts);
+    return () => window.removeEventListener("pcc-intercepts-updated", handleRemoteIntercepts);
   }, []);
 
   // Mode A: Emergency 3-Step Flow State

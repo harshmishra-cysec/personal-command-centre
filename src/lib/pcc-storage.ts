@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BOARDS, type Board, type Pillar, type Task } from "@/lib/dash-data";
 import {
   DEFAULT_ROADMAPS,
@@ -20,6 +21,7 @@ type SyncListener = (status: SyncStatus) => void;
 const syncListeners = new Set<SyncListener>();
 
 let currentSyncStatus: SyncStatus = isSupabaseConfigured ? "syncing" : "offline";
+let pulseTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export function getSyncStatus(): SyncStatus {
   return currentSyncStatus;
@@ -28,6 +30,18 @@ export function getSyncStatus(): SyncStatus {
 export function setSyncStatus(status: SyncStatus): void {
   currentSyncStatus = status;
   syncListeners.forEach((fn) => fn(status));
+}
+
+/** Brief 400ms pulse to indicate an inbound realtime sync event before reverting to steady state */
+export function triggerSyncPulse(durationMs = 400): void {
+  if (pulseTimeout) {
+    clearTimeout(pulseTimeout);
+  }
+  setSyncStatus("syncing");
+  pulseTimeout = setTimeout(() => {
+    setSyncStatus(isSupabaseConfigured ? "synced" : "offline");
+    pulseTimeout = null;
+  }, durationMs);
 }
 
 export function subscribeSyncStatus(listener: SyncListener): () => void {
@@ -235,8 +249,38 @@ export function toSupabaseTaskPayload(task: Task, pillar: Pillar): Record<string
   };
 }
 
+export function getTaskPillar(row: Record<string, unknown>, fallback: Pillar = "cyber"): Pillar {
+  const val = String(row.pillar || row.board_id || row.pillar_id || "").toLowerCase();
+  if (val === "cyber" || val === "academics" || val === "aiml") {
+    return val as Pillar;
+  }
+  return fallback;
+}
+
 export function fromSupabaseTaskPayload(row: Record<string, unknown>): Task {
-  const isDone = Boolean(row.completed ?? row.done);
+  const isDone =
+    row.completed !== undefined
+      ? Boolean(row.completed)
+      : row.done !== undefined
+        ? Boolean(row.done)
+        : row.status === "completed" || row.status === "done";
+
+  const durationMinutes =
+    typeof row.duration_minutes === "number" && row.duration_minutes > 0
+      ? row.duration_minutes
+      : typeof row.durationMinutes === "number" && row.durationMinutes > 0
+        ? row.durationMinutes
+        : 45;
+
+  const actualFocusMinutes =
+    typeof row.actual_focus_minutes === "number"
+      ? row.actual_focus_minutes
+      : typeof row.actualFocusMinutes === "number"
+        ? row.actualFocusMinutes
+        : isDone
+          ? durationMinutes
+          : 0;
+
   return {
     id: String(row.id),
     title: String(row.title || "Untitled Objective"),
@@ -247,10 +291,8 @@ export function fromSupabaseTaskPayload(row: Record<string, unknown>): Task {
         ? row.priority
         : "normal",
     done: isDone,
-    durationMinutes: Number(row.duration_minutes ?? row.durationMinutes ?? 45),
-    actualFocusMinutes: Number(
-      row.actual_focus_minutes ?? row.actualFocusMinutes ?? (isDone ? 45 : 0),
-    ),
+    durationMinutes,
+    actualFocusMinutes,
     slot: typeof row.slot === "string" ? row.slot : undefined,
     date: typeof row.date === "string" ? row.date : undefined,
   };
@@ -497,12 +539,23 @@ export async function upsertRoadmapTrackToSupabase(
 }
 
 /** Persist streak and dopamine intercept counters to user_stats table */
+let lastPersistedStats: { streak: number; intercepts: number } | null = null;
+
 export async function persistUserStatsToSupabase(
   streak: number,
   intercepts: number,
   history?: Record<string, number>,
 ): Promise<void> {
   if (!isSupabaseConfigured) return;
+  if (
+    lastPersistedStats &&
+    lastPersistedStats.streak === streak &&
+    lastPersistedStats.intercepts === intercepts &&
+    !history
+  ) {
+    return;
+  }
+  lastPersistedStats = { streak, intercepts };
   try {
     const payload: Record<string, unknown> = {
       id: "default",
@@ -524,4 +577,336 @@ export async function persistUserStatsToSupabase(
     console.warn("[PCC Supabase] Exception persisting user stats:", err);
     setSyncStatus("offline");
   }
+}
+
+/* =========================================================================
+   SUPABASE REALTIME (ZERO-REFRESH INSTANT SYNC)
+   ========================================================================= */
+
+export interface PccRealtimeCallbacks {
+  onTaskInsert?: (task: Task, pillar: Pillar) => void;
+  onTaskUpdate?: (task: Task, pillar: Pillar) => void;
+  onTaskDelete?: (taskId: string) => void;
+  onRoadmapUpdate?: (trackId: TrackId, nodes: RoadmapNode[]) => void;
+  onUserStatsUpdate?: (stats: { streak?: number; intercepts?: number }) => void;
+}
+
+/**
+ * Subscribes to Supabase Realtime 'postgres_changes' on tasks, roadmaps, and user_stats.
+ * Uses a timestamped unique channel name to prevent collision.
+ * Returns an unsubscribe callback that tears down the channel via supabase.removeChannel(channel).
+ */
+export function subscribePccRealtime(callbacks?: PccRealtimeCallbacks): () => void {
+  if (!isSupabaseConfigured) {
+    return () => {};
+  }
+
+  let isMounted = true;
+  const channel = supabase
+    .channel(`pcc-tasks-sync-${Date.now()}`)
+    .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, (payload) => {
+      if (!isMounted) return;
+      triggerSyncPulse(400);
+      const eventType = payload.eventType;
+      if (eventType === "INSERT" && payload.new) {
+        const row = payload.new as Record<string, unknown>;
+        const task = fromSupabaseTaskPayload(row);
+        const pillar = getTaskPillar(row);
+        callbacks?.onTaskInsert?.(task, pillar);
+      } else if (eventType === "UPDATE" && payload.new) {
+        const row = payload.new as Record<string, unknown>;
+        const task = fromSupabaseTaskPayload(row);
+        const pillar = getTaskPillar(row);
+        callbacks?.onTaskUpdate?.(task, pillar);
+      } else if (eventType === "DELETE" && (payload.old || payload.new)) {
+        const row = (payload.old || payload.new) as Record<string, unknown>;
+        const deletedId = String(row.id || (payload.old as Record<string, unknown>)?.id || "");
+        if (deletedId) {
+          callbacks?.onTaskDelete?.(deletedId);
+        }
+      }
+    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "roadmaps" }, (payload) => {
+      if (!isMounted) return;
+      triggerSyncPulse(400);
+      if (payload.new) {
+        const row = payload.new as Record<string, unknown>;
+        const trackId = (row.track_id || row.track || row.id) as TrackId;
+        if (
+          (trackId === "cyber" || trackId === "academics" || trackId === "aiml") &&
+          Array.isArray(row.nodes)
+        ) {
+          callbacks?.onRoadmapUpdate?.(trackId, row.nodes as RoadmapNode[]);
+        }
+      }
+    })
+    .on("postgres_changes", { event: "*", schema: "public", table: "user_stats" }, (payload) => {
+      if (!isMounted) return;
+      triggerSyncPulse(400);
+      if (payload.new) {
+        const row = payload.new as Record<string, unknown>;
+        const stats: { streak?: number; intercepts?: number } = {};
+        if (typeof row.streak === "number") stats.streak = row.streak;
+        if (typeof row.intercepts === "number") stats.intercepts = row.intercepts;
+        callbacks?.onUserStatsUpdate?.(stats);
+      }
+    })
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        setSyncStatus("synced");
+      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        setSyncStatus("offline");
+      }
+    });
+
+  return () => {
+    isMounted = false;
+    supabase.removeChannel(channel);
+  };
+}
+
+/**
+ * Direct Realtime Hook for components managing a flat Task[] state array.
+ * Sets up a listener on mount with timestamped channel and clean teardown.
+ */
+export function useTasksRealtime(setTasks: React.Dispatch<React.SetStateAction<Task[]>>): void {
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    let isMounted = true;
+    const channel = supabase
+      .channel(`pcc-tasks-sync-${Date.now()}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, (payload) => {
+        if (!isMounted) return;
+        triggerSyncPulse(400);
+        if (payload.eventType === "INSERT") {
+          const raw = payload.new as Record<string, unknown>;
+          const formatted = fromSupabaseTaskPayload(raw);
+          const incoming = { ...formatted, ...(payload.new as Task) };
+          setTasks((prev) => {
+            if (prev.some((t) => t.id === incoming.id)) return prev;
+            return [...prev, incoming];
+          });
+        } else if (payload.eventType === "UPDATE") {
+          const raw = payload.new as Record<string, unknown>;
+          const formatted = fromSupabaseTaskPayload(raw);
+          const incoming = { ...formatted, ...(payload.new as Task) };
+          setTasks((prev) => prev.map((t) => (t.id === incoming.id ? { ...t, ...incoming } : t)));
+        } else if (payload.eventType === "DELETE") {
+          const raw = (payload.old || payload.new) as Record<string, unknown>;
+          const targetId = String(raw?.id || (payload.old as Record<string, unknown>)?.id || "");
+          if (targetId) {
+            setTasks((prev) => prev.filter((t) => t.id !== targetId));
+          }
+        }
+      })
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, [setTasks]);
+}
+
+/**
+ * Core React Hook for zero-refresh instant synchronization of Dashboard Boards & User Stats.
+ * Handles task inserts, task updates, task deletions, roadmap track updates, and streak/intercepts.
+ * Ensures clean channel teardown on component unmount.
+ */
+export function usePccRealtime({
+  setBoards,
+  setStreak,
+}: {
+  setBoards: React.Dispatch<React.SetStateAction<Board[]>>;
+  setStreak?: React.Dispatch<React.SetStateAction<number>>;
+}): void {
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    let isMounted = true;
+
+    const channel = supabase
+      .channel(`pcc-tasks-sync-${Date.now()}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, (payload) => {
+        if (!isMounted) return;
+        triggerSyncPulse(400);
+
+        if (payload.eventType === "INSERT") {
+          const raw = payload.new as Record<string, unknown>;
+          const newTask = fromSupabaseTaskPayload(raw);
+          const pillar = getTaskPillar(raw);
+
+          setBoards((prevBoards) => {
+            // Idempotency: guard against duplicate task IDs
+            const alreadyExists = prevBoards.some((b) => b.tasks.some((t) => t.id === newTask.id));
+            if (alreadyExists) return prevBoards;
+
+            const nextBoards = prevBoards.map((b) =>
+              b.id === pillar
+                ? {
+                    ...b,
+                    tasks: [...b.tasks, newTask],
+                  }
+                : b,
+            );
+            saveBoards(nextBoards);
+            return nextBoards;
+          });
+        } else if (payload.eventType === "UPDATE") {
+          const raw = payload.new as Record<string, unknown>;
+          const updatedTask = fromSupabaseTaskPayload(raw);
+          const pillar = getTaskPillar(raw);
+
+          setBoards((prevBoards) => {
+            let originPillar: Pillar | null = null;
+            for (const b of prevBoards) {
+              if (b.tasks.some((t) => t.id === updatedTask.id)) {
+                originPillar = b.id;
+                break;
+              }
+            }
+
+            const targetPillar = pillar || originPillar || "cyber";
+
+            let nextBoards: Board[];
+            if (originPillar && originPillar !== targetPillar) {
+              // Task moved across pillars
+              nextBoards = prevBoards.map((b) => {
+                if (b.id === originPillar) {
+                  return {
+                    ...b,
+                    tasks: b.tasks.filter((t) => t.id !== updatedTask.id),
+                  };
+                }
+                if (b.id === targetPillar) {
+                  return {
+                    ...b,
+                    tasks: [...b.tasks, updatedTask],
+                  };
+                }
+                return b;
+              });
+            } else {
+              // Same pillar or target pillar
+              nextBoards = prevBoards.map((b) => {
+                if (b.id === targetPillar) {
+                  const taskExists = b.tasks.some((t) => t.id === updatedTask.id);
+                  if (taskExists) {
+                    return {
+                      ...b,
+                      tasks: b.tasks.map((t) =>
+                        t.id === updatedTask.id
+                          ? {
+                              ...t,
+                              ...updatedTask,
+                              ...(payload.new as Task),
+                              title: updatedTask.title || t.title,
+                              tag: updatedTask.tag || t.tag,
+                              description:
+                                updatedTask.description !== undefined
+                                  ? updatedTask.description
+                                  : t.description,
+                              priority: updatedTask.priority || t.priority,
+                              done: updatedTask.done,
+                              durationMinutes: updatedTask.durationMinutes || t.durationMinutes,
+                              actualFocusMinutes:
+                                updatedTask.actualFocusMinutes !== undefined
+                                  ? updatedTask.actualFocusMinutes
+                                  : t.actualFocusMinutes,
+                              slot: updatedTask.slot !== undefined ? updatedTask.slot : t.slot,
+                              date: updatedTask.date !== undefined ? updatedTask.date : t.date,
+                            }
+                          : t,
+                      ),
+                    };
+                  } else {
+                    return {
+                      ...b,
+                      tasks: [...b.tasks, updatedTask],
+                    };
+                  }
+                }
+                return b;
+              });
+            }
+
+            saveBoards(nextBoards);
+            return nextBoards;
+          });
+        } else if (payload.eventType === "DELETE") {
+          const raw = (payload.old || payload.new) as Record<string, unknown>;
+          const deletedTaskId = String(
+            raw?.id || (payload.old as Record<string, unknown>)?.id || "",
+          );
+          if (deletedTaskId) {
+            setBoards((prevBoards) => {
+              const nextBoards = prevBoards.map((b) => ({
+                ...b,
+                tasks: b.tasks.filter((t) => t.id !== deletedTaskId),
+              }));
+              saveBoards(nextBoards);
+              return nextBoards;
+            });
+          }
+        }
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "roadmaps" }, (payload) => {
+        if (!isMounted) return;
+        triggerSyncPulse(400);
+        if (payload.new) {
+          const row = payload.new as Record<string, unknown>;
+          const trackId = (row.track_id || row.track || row.id) as TrackId;
+          if (
+            (trackId === "cyber" || trackId === "academics" || trackId === "aiml") &&
+            Array.isArray(row.nodes)
+          ) {
+            const currentRoadmaps = loadRoadmaps();
+            if (currentRoadmaps[trackId]) {
+              const nextRoadmaps = {
+                ...currentRoadmaps,
+                [trackId]: {
+                  ...currentRoadmaps[trackId],
+                  nodes: row.nodes as RoadmapNode[],
+                },
+              };
+              saveRoadmaps(nextRoadmaps);
+              window.dispatchEvent(
+                new CustomEvent("pcc-roadmaps-updated", {
+                  detail: { trackId, nodes: row.nodes },
+                }),
+              );
+            }
+          }
+        }
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_stats" }, (payload) => {
+        if (!isMounted) return;
+        triggerSyncPulse(400);
+        if (payload.new) {
+          const row = payload.new as Record<string, unknown>;
+          if (typeof row.streak === "number" && setStreak) {
+            setStreak(row.streak);
+          }
+          if (typeof row.intercepts === "number") {
+            saveInterceptsCount(row.intercepts);
+            window.dispatchEvent(
+              new CustomEvent("pcc-intercepts-updated", {
+                detail: row.intercepts,
+              }),
+            );
+          }
+        }
+      })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          setSyncStatus("synced");
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          setSyncStatus("offline");
+        }
+      });
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, [setBoards, setStreak]);
 }

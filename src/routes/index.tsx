@@ -22,6 +22,7 @@ import {
   subscribeSyncStatus,
   syncAllFromSupabase,
   updateTaskInSupabase,
+  usePccRealtime,
   type SyncStatus,
 } from "@/lib/pcc-storage";
 import { computeFocusHoursFromBoards } from "@/lib/stats-data";
@@ -75,6 +76,12 @@ function Index() {
     const unsub = subscribeSyncStatus(setSyncStatusState);
     return unsub;
   }, []);
+
+  // Supabase Realtime Zero-Refresh Instant Sync (tasks, roadmaps, user stats)
+  usePccRealtime({
+    setBoards,
+    setStreak,
+  });
 
   // Hydrate local state first, then sync from Supabase cloud
   useEffect(() => {
