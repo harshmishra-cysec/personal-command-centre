@@ -459,3 +459,78 @@ export function calculateTrackProgress(nodes: RoadmapNode[]): number {
   }, 0);
   return totalSubTasks > 0 ? Math.round((completedSubTasks / totalSubTasks) * 100) : 0;
 }
+
+export function pillarToTrackId(pillar: "cyber" | "gold" | "emerald"): TrackId {
+  if (pillar === "cyber") return "cyber";
+  if (pillar === "gold") return "academics";
+  return "aiml";
+}
+
+export function trackIdToPillar(trackId: TrackId): "cyber" | "gold" | "emerald" {
+  if (trackId === "cyber") return "cyber";
+  if (trackId === "academics") return "gold";
+  return "emerald";
+}
+
+/**
+ * Updates a roadmap checklist item's completion status, recalculates the parent node's
+ * status and progress, persists to localStorage, and dispatches the update event for live UI sync.
+ */
+export function setRoadmapChecklistItemCompletion(
+  nodeId: string,
+  checklistItemId: string,
+  completed: boolean,
+): { updatedTrackId: TrackId; updatedNodes: RoadmapNode[] } | null {
+  const roadmaps = loadRoadmaps();
+  let affectedTrackId: TrackId | null = null;
+  let affectedNodes: RoadmapNode[] | null = null;
+
+  const tracks: TrackId[] = ["cyber", "academics", "aiml"];
+  for (const tid of tracks) {
+    const track = roadmaps[tid];
+    if (!track) continue;
+    const nodeIndex = track.nodes.findIndex((n) => n.id === nodeId);
+    if (nodeIndex !== -1) {
+      affectedTrackId = tid;
+      const targetNode = track.nodes[nodeIndex];
+      const subTasks = (targetNode.subTasks || []).map((st) =>
+        st.id === checklistItemId ? { ...st, completed } : st,
+      );
+
+      const allCompleted = subTasks.length > 0 && subTasks.every((st) => st.completed);
+      let newStatus: NodeStatus = targetNode.status;
+      if (allCompleted) {
+        newStatus = "completed";
+      } else if (targetNode.status === "completed" && !allCompleted) {
+        newStatus = "active";
+      }
+
+      const updatedNode: RoadmapNode = {
+        ...targetNode,
+        subTasks,
+        status: newStatus,
+      };
+
+      affectedNodes = track.nodes.map((n, idx) => (idx === nodeIndex ? updatedNode : n));
+      roadmaps[tid] = {
+        ...track,
+        nodes: affectedNodes,
+      };
+      break;
+    }
+  }
+
+  if (affectedTrackId && affectedNodes) {
+    saveRoadmaps(roadmaps);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("pcc-roadmaps-updated", {
+          detail: { trackId: affectedTrackId, nodes: affectedNodes },
+        }),
+      );
+    }
+    return { updatedTrackId: affectedTrackId, updatedNodes: affectedNodes };
+  }
+
+  return null;
+}

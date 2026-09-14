@@ -13,6 +13,8 @@ export type Task = {
   slot?: string | undefined; // Legacy / secondary time label
   date?: string | undefined;
   done: boolean;
+  node_id?: string | undefined;
+  checklist_item_id?: string | undefined;
 };
 
 export type Board = {
