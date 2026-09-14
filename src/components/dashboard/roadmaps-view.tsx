@@ -4,7 +4,6 @@ import {
   BookOpen,
   Cpu,
   Plus,
-  RotateCcw,
   Sparkles,
   Milestone,
   CheckCircle2,
@@ -17,7 +16,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  DEFAULT_ROADMAPS,
   loadRoadmaps,
   saveRoadmaps,
   calculateTrackProgress,
@@ -147,20 +145,6 @@ export function RoadmapsView() {
     setActiveTrackId(newNode.trackId);
   };
 
-  const handleResetDefaults = () => {
-    if (
-      confirm(
-        "Reset all tactical roadmap paths to initial curriculum defaults? Custom milestones will be restored.",
-      )
-    ) {
-      setRoadmaps(DEFAULT_ROADMAPS);
-      saveRoadmaps(DEFAULT_ROADMAPS);
-      upsertRoadmapTrackToSupabase("cyber", DEFAULT_ROADMAPS.cyber.nodes);
-      upsertRoadmapTrackToSupabase("academics", DEFAULT_ROADMAPS.academics.nodes);
-      upsertRoadmapTrackToSupabase("aiml", DEFAULT_ROADMAPS.aiml.nodes);
-    }
-  };
-
   const getTrackTheme = (trackId: TrackId) => {
     switch (trackId) {
       case "cyber":
@@ -227,14 +211,6 @@ export function RoadmapsView() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleResetDefaults}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 font-mono text-xs text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
-          >
-            <RotateCcw className="size-3" />
-            <span className="hidden sm:inline">RESET</span> DEFAULTS
-          </button>
           <button
             type="button"
             onClick={() => setAddModalOpen(true)}
@@ -523,7 +499,7 @@ export function RoadmapsView() {
               </h4>
               <p className="font-mono text-xs text-muted-foreground max-w-md mx-auto">
                 All milestones in this track vector have been cleared. Build your custom progression
-                roadmap from scratch or restore tactical defaults.
+                roadmap from scratch.
               </p>
             </div>
             <div className="flex items-center justify-center gap-3 pt-2">
@@ -534,14 +510,6 @@ export function RoadmapsView() {
               >
                 <Plus className="size-3.5" />
                 <span>+ ADD FIRST MILESTONE</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleResetDefaults}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-4 py-2 font-mono text-xs text-muted-foreground hover:text-foreground transition-all"
-              >
-                <RotateCcw className="size-3.5" />
-                <span>RESTORE FACTORY ROADMAP</span>
               </button>
             </div>
           </div>

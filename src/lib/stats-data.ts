@@ -1,4 +1,4 @@
-import { loadBoards, saveBoards } from "@/lib/pcc-storage";
+import { loadBoards, saveBoards, purgeSupabaseCloudData } from "@/lib/pcc-storage";
 import { loadRoadmaps, saveRoadmaps, DEFAULT_ROADMAPS } from "@/lib/roadmap-data";
 import { loadInterceptsCount, saveInterceptsCount } from "@/lib/reality-data";
 import { BOARDS, type Board } from "@/lib/dash-data";
@@ -67,7 +67,7 @@ export function calculateLongestStreak(
   history: Record<string, number>,
   currentStreak: number,
 ): number {
-  let longest = 7; // Baseline record
+  let longest = 0; // True zero baseline
   try {
     const raw = window.localStorage.getItem(LONGEST_STREAK_KEY);
     if (raw) {
@@ -95,23 +95,16 @@ export function generate30DayMatrix(history: Record<string, number>): DayActivit
   const result: DayActivity[] = [];
   const today = new Date();
 
-  // Baseline simulated completion pattern for previous days to give authentic cyber HUD matrix
-  const seedPattern = [
-    2, 3, 1, 4, 2, 0, 3, 2, 4, 3, 5, 2, 1, 3, 4, 2, 3, 4, 1, 0, 2, 3, 4, 3, 5, 4, 2, 3, 4, 3,
-  ];
-
+  // Strictly dynamic from real logged completions — no fake seeds
   for (let i = 29; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
     const key = formatDateKey(d);
 
-    // Check if recorded in real history, otherwise use structured seed
     let count = 0;
     if (key in history) {
       const val = history[key];
-      count = typeof val === "number" ? (val > 10 ? Math.round(val / 20) : val) : 0;
-    } else {
-      count = seedPattern[29 - i] ?? 2;
+      count = typeof val === "number" && val > 0 ? (val > 10 ? Math.round(val / 20) : val) : 0;
     }
 
     let level: 0 | 1 | 2 | 3 | 4 = 0;
@@ -138,11 +131,10 @@ export function computeFocusHoursFromBoards(boards: Board[]): number {
   boards.forEach((b) => {
     b.tasks.forEach((t) => {
       if (t.done) {
-        // If completed, use actual focus minutes if recorded, or durationMinutes
         const taskMins =
           typeof t.actualFocusMinutes === "number" && t.actualFocusMinutes > 0
             ? t.actualFocusMinutes
-            : t.durationMinutes || 45;
+            : t.durationMinutes || 0;
         totalMinutes += taskMins;
       } else if (typeof t.actualFocusMinutes === "number" && t.actualFocusMinutes > 0) {
         totalMinutes += t.actualFocusMinutes;
@@ -155,6 +147,7 @@ export function computeFocusHoursFromBoards(boards: Board[]): number {
 
 export function computeStatsOverview(): StatsOverview {
   const boards = loadBoards();
+  const roadmaps = loadRoadmaps();
   const rawHistory = loadRawHistory();
   const intercepts = loadInterceptsCount();
 
@@ -176,6 +169,7 @@ export function computeStatsOverview(): StatsOverview {
 
   const tagStats: Record<string, { total: number; completed: number }> = {};
 
+  // Process tasks across Today's boards
   boards.forEach((board) => {
     const pillarKey = board.id;
     board.tasks.forEach((task) => {
@@ -185,7 +179,7 @@ export function computeStatsOverview(): StatsOverview {
         const mins =
           typeof task.actualFocusMinutes === "number" && task.actualFocusMinutes > 0
             ? task.actualFocusMinutes
-            : task.durationMinutes || 45;
+            : task.durationMinutes || 0;
         accumulatedFocusMinutes += mins;
       } else if (typeof task.actualFocusMinutes === "number" && task.actualFocusMinutes > 0) {
         accumulatedFocusMinutes += task.actualFocusMinutes;
@@ -205,12 +199,45 @@ export function computeStatsOverview(): StatsOverview {
       }
 
       // Tag stats
-      const tag = task.tag || "GENERAL";
-      if (!tagStats[tag]) {
-        tagStats[tag] = { total: 0, completed: 0 };
+      if (task.tag) {
+        const tag = task.tag.toUpperCase();
+        if (!tagStats[tag]) {
+          tagStats[tag] = { total: 0, completed: 0 };
+        }
+        tagStats[tag].total += 1;
+        if (task.done) tagStats[tag].completed += 1;
       }
-      tagStats[tag].total += 1;
-      if (task.done) tagStats[tag].completed += 1;
+    });
+  });
+
+  // Also include roadmap milestones in total and completed counts
+  Object.values(roadmaps).forEach((track) => {
+    const pillarKey =
+      track.trackId === "cyber" ? "cyber" : track.trackId === "academics" ? "gold" : "emerald";
+    track.nodes.forEach((node) => {
+      totalTasks += 1;
+      const isDone =
+        node.status === "completed" ||
+        (node.subTasks && node.subTasks.length > 0 && node.subTasks.every((st) => st.completed));
+      if (isDone) {
+        completedTasks += 1;
+      }
+
+      if (pillarStats[pillarKey]) {
+        pillarStats[pillarKey].total += 1;
+        if (isDone) pillarStats[pillarKey].completed += 1;
+      }
+
+      if (node.tags && node.tags.length > 0) {
+        node.tags.forEach((t) => {
+          const tag = t.toUpperCase();
+          if (!tagStats[tag]) {
+            tagStats[tag] = { total: 0, completed: 0 };
+          }
+          tagStats[tag].total += 1;
+          if (isDone) tagStats[tag].completed += 1;
+        });
+      }
     });
   });
 
@@ -222,7 +249,7 @@ export function computeStatsOverview(): StatsOverview {
 
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  // Calculate current streak from history
+  // Calculate current streak strictly from actual completion logs
   const today = new Date();
   let currentStreak = 0;
   let offset = 0;
@@ -230,13 +257,13 @@ export function computeStatsOverview(): StatsOverview {
     const d = new Date(today);
     d.setDate(d.getDate() - offset);
     const key = formatDateKey(d);
-    const count = rawHistory[key] ?? (offset > 0 ? 1 : completedTasks > 0 ? 1 : 0);
+    const count = rawHistory[key] ?? 0;
     if (count > 0) {
       currentStreak += 1;
       offset += 1;
     } else {
       if (offset === 0) {
-        // Today has no completions yet; check yesterday
+        // Today has no completions yet; check yesterday to keep unbroken active streak
         offset += 1;
       } else {
         break;
@@ -246,9 +273,9 @@ export function computeStatsOverview(): StatsOverview {
 
   const longestStreak = calculateLongestStreak(rawHistory, currentStreak);
 
-  // Total Focus Output in hours
+  // Total Focus Output in hours (default to 0.0 when no focus time is logged)
   const calculatedHours = Number((accumulatedFocusMinutes / 60).toFixed(1));
-  const totalFocusHours = calculatedHours > 0 ? calculatedHours : 5.4;
+  const totalFocusHours = calculatedHours;
 
   const activityMatrix = generate30DayMatrix(rawHistory);
 
@@ -257,7 +284,7 @@ export function computeStatsOverview(): StatsOverview {
     completedTasks,
     pendingTasks: totalTasks - completedTasks,
     completionRate,
-    currentStreak: Math.max(currentStreak, 3), // Ensure sensible tactical baseline
+    currentStreak,
     longestStreak,
     totalFocusHours,
     interceptsCount: intercepts,
@@ -315,7 +342,7 @@ export function importBackupData(jsonText: string): boolean {
   }
 }
 
-export function purgeAllDataToDefaults(): void {
+export function purgeAllDataToZero(): void {
   try {
     window.localStorage.removeItem("pcc_tasks");
     window.localStorage.removeItem("pcc_history");
@@ -324,8 +351,26 @@ export function purgeAllDataToDefaults(): void {
     window.localStorage.removeItem("pcc_longest_streak");
     saveBoards(BOARDS);
     saveRoadmaps(DEFAULT_ROADMAPS);
-    saveInterceptsCount(12);
+    saveInterceptsCount(0);
+    saveRawHistory({});
+
+    // Cloud purge if Supabase is connected
+    purgeSupabaseCloudData().catch(() => {});
+
+    // Broadcast local state reset events
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("pcc-intercepts-updated", { detail: 0 }));
+      (["cyber", "academics", "aiml"] as const).forEach((trackId) => {
+        window.dispatchEvent(
+          new CustomEvent("pcc-roadmaps-updated", {
+            detail: { trackId, nodes: [] },
+          }),
+        );
+      });
+    }
   } catch {
     // ignore
   }
 }
+
+export const purgeAllDataToDefaults = purgeAllDataToZero;

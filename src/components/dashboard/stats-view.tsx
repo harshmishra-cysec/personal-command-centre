@@ -15,13 +15,14 @@ import {
   Activity,
   Layers,
   Zap,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   computeStatsOverview,
   exportBackupData,
   importBackupData,
-  purgeAllDataToDefaults,
+  purgeAllDataToZero,
   type StatsOverview,
   type DayActivity,
 } from "@/lib/stats-data";
@@ -69,7 +70,7 @@ export function StatsView() {
   };
 
   const handleConfirmPurge = () => {
-    purgeAllDataToDefaults();
+    purgeAllDataToZero();
     setResetModalOpen(false);
     refreshStats();
   };
@@ -92,15 +93,18 @@ export function StatsView() {
     }
   };
 
-  // Pillar allocation percentages
+  // Pillar allocation percentages (strictly dynamic, 0% if no tasks exist)
   const totalPillarCount =
     stats.pillarStats.cyber.total + stats.pillarStats.gold.total + stats.pillarStats.emerald.total;
   const cyberPct =
-    totalPillarCount > 0 ? (stats.pillarStats.cyber.total / totalPillarCount) * 100 : 33.3;
+    totalPillarCount > 0 ? (stats.pillarStats.cyber.total / totalPillarCount) * 100 : 0;
   const goldPct =
-    totalPillarCount > 0 ? (stats.pillarStats.gold.total / totalPillarCount) * 100 : 33.3;
+    totalPillarCount > 0 ? (stats.pillarStats.gold.total / totalPillarCount) * 100 : 0;
   const emeraldPct =
-    totalPillarCount > 0 ? (stats.pillarStats.emerald.total / totalPillarCount) * 100 : 33.4;
+    totalPillarCount > 0 ? (stats.pillarStats.emerald.total / totalPillarCount) * 100 : 0;
+
+  const avgFocusYield =
+    stats.completedTasks > 0 ? (stats.totalFocusHours / stats.completedTasks).toFixed(1) : "0.0";
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -211,7 +215,7 @@ export function StatsView() {
           </div>
           <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] font-mono text-muted-foreground">
             <span>HIGH-COGNITIVE YIELD</span>
-            <span className="text-cyber font-bold">~1.5H / MISSION</span>
+            <span className="text-cyber font-bold">~{avgFocusYield}H / MISSION</span>
           </div>
         </div>
 
@@ -328,20 +332,29 @@ export function StatsView() {
             </div>
           </div>
 
-          <div className="h-2 w-full overflow-hidden rounded-full flex bg-[#0B0F17]">
-            <div
-              className="h-full bg-cyber transition-all duration-500"
-              style={{ width: `${cyberPct}%` }}
-            />
-            <div
-              className="h-full bg-gold transition-all duration-500"
-              style={{ width: `${goldPct}%` }}
-            />
-            <div
-              className="h-full bg-emerald transition-all duration-500"
-              style={{ width: `${emeraldPct}%` }}
-            />
-          </div>
+          {totalPillarCount === 0 ? (
+            <div className="space-y-1">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-[#0B0F17] border border-white/5" />
+              <p className="text-[11px] font-mono text-muted-foreground/50 text-center pt-0.5">
+                No active tasks logged across pillars yet (0 active objectives).
+              </p>
+            </div>
+          ) : (
+            <div className="h-2 w-full overflow-hidden rounded-full flex bg-[#0B0F17]">
+              <div
+                className="h-full bg-cyber transition-all duration-500"
+                style={{ width: `${cyberPct}%` }}
+              />
+              <div
+                className="h-full bg-gold transition-all duration-500"
+                style={{ width: `${goldPct}%` }}
+              />
+              <div
+                className="h-full bg-emerald transition-all duration-500"
+                style={{ width: `${emeraldPct}%` }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Active Domain Tags */}
@@ -356,23 +369,29 @@ export function StatsView() {
             </span>
           </div>
 
-          <div className="flex flex-wrap gap-1.5 pt-0.5">
-            {Object.entries(stats.tagStats).map(([tag, data]) => {
-              const rate = data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0;
-              return (
-                <div
-                  key={tag}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-[#0B0F17] px-2.5 py-1 font-mono text-[11px] hover:border-white/20 transition-colors"
-                >
-                  <span className="font-bold text-foreground">#{tag}</span>
-                  <span className="text-[10px] text-emerald font-semibold">{rate}%</span>
-                  <span className="text-[10px] text-muted-foreground/70">
-                    ({data.completed}/{data.total})
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          {Object.keys(stats.tagStats).length === 0 ? (
+            <div className="text-xs font-mono text-muted-foreground/50 py-1.5">
+              No active domain tags recorded yet.
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-1.5 pt-0.5">
+              {Object.entries(stats.tagStats).map(([tag, data]) => {
+                const rate = data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0;
+                return (
+                  <div
+                    key={tag}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-[#0B0F17] px-2.5 py-1 font-mono text-[11px] hover:border-white/20 transition-colors"
+                  >
+                    <span className="font-bold text-foreground">#{tag}</span>
+                    <span className="text-[10px] text-emerald font-semibold">{rate}%</span>
+                    <span className="text-[10px] text-muted-foreground/70">
+                      ({data.completed}/{data.total})
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -438,8 +457,8 @@ export function StatsView() {
             onClick={() => setResetModalOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/5 px-3.5 py-2 font-mono text-xs font-bold text-red-400 hover:bg-red-500/15 hover:border-red-500/40 transition-all sm:ml-auto"
           >
-            <RefreshCw className="size-3.5" />
-            <span>PURGE TO DEFAULTS</span>
+            <Trash2 className="size-3.5" />
+            <span>PURGE ALL LOCAL DATA</span>
           </button>
         </div>
       </div>
@@ -451,13 +470,13 @@ export function StatsView() {
             <div className="flex items-center gap-3 text-red-400">
               <AlertTriangle className="size-5 flex-shrink-0" />
               <h4 className="font-mono text-sm font-bold uppercase tracking-wider">
-                CONFIRM PURGE PROTOCOL
+                CONFIRM PURGE PROTOCOL (ZERO STATE)
               </h4>
             </div>
 
             <p className="font-mono text-xs text-muted-foreground leading-relaxed">
-              This action will reset all active task boards, roadmap milestones, streak counters,
-              and intercepts back to initial tactical factory defaults.
+              This action will permanently wipe all local task boards, roadmap milestones, activity
+              logs, streak counters, and session telemetry back to a clean zero state.
             </p>
 
             <div className="pt-2 flex items-center justify-end gap-2.5 font-mono text-xs">
@@ -473,7 +492,7 @@ export function StatsView() {
                 onClick={handleConfirmPurge}
                 className="rounded-lg bg-red-500/20 border border-red-500/50 px-4 py-2 font-bold text-red-300 hover:bg-red-500/30 transition-colors"
               >
-                CONFIRM PURGE & RESET
+                CONFIRM PURGE (ZERO STATE)
               </button>
             </div>
           </div>

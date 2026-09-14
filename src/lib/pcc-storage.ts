@@ -136,6 +136,29 @@ export function loadBoards(): Board[] {
     if (!raw) return BOARDS;
     const parsed: unknown = JSON.parse(raw);
     if (isBoardArray(parsed)) {
+      // Check if it only contains the legacy mock tasks (c1, c2, c3, c4, c5, a1... m3)
+      const allTaskIds = parsed.flatMap((b) => b.tasks.map((t) => t.id));
+      const legacyMockIds = new Set([
+        "c1",
+        "c2",
+        "c3",
+        "c4",
+        "c5",
+        "a1",
+        "a2",
+        "a3",
+        "a4",
+        "m1",
+        "m2",
+        "m3",
+      ]);
+      const hasOnlyLegacyMock =
+        allTaskIds.length > 0 && allTaskIds.every((id) => legacyMockIds.has(id));
+      if (hasOnlyLegacyMock) {
+        saveBoards(BOARDS);
+        return BOARDS;
+      }
+
       return parsed.map((board) => ({
         ...board,
         tasks: board.tasks.map(normalizeTask),
@@ -943,4 +966,33 @@ export function usePccRealtime({
       supabase.removeChannel(channel);
     };
   }, [setBoards, setStreak]);
+}
+
+/**
+ * Permanently purges all user tasks, roadmaps, and telemetry records from Supabase cloud.
+ */
+export async function purgeSupabaseCloudData(): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  try {
+    await supabase.from("tasks").delete().neq("id", "___never_match___");
+    const tracks: TrackId[] = ["cyber", "academics", "aiml"];
+    for (const trackId of tracks) {
+      await supabase.from("roadmaps").upsert({
+        id: trackId,
+        track: trackId,
+        track_id: trackId,
+        nodes: [],
+        updated_at: new Date().toISOString(),
+      });
+    }
+    await supabase.from("user_stats").upsert({
+      id: "default",
+      streak: 0,
+      intercepts: 0,
+      history: {},
+      updated_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn("[REDFOX Supabase] Cloud purge error:", err);
+  }
 }
