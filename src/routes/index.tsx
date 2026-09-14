@@ -30,13 +30,13 @@ import { computeFocusHoursFromBoards } from "@/lib/stats-data";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Personal Command Center — Daily Dash" },
+      { title: "REDFOX" },
       {
         name: "description",
         content:
-          "Tactical dark-mode dashboard tracking cybersecurity, academics, and AIML objectives with daily focus stats and streaks.",
+          "Tactical dark-mode command deck tracking cybersecurity, academics, and AIML objectives with daily focus stats and streaks.",
       },
-      { property: "og:title", content: "Personal Command Center — Daily Dash" },
+      { property: "og:title", content: "REDFOX" },
       {
         name: "twitter:card",
         content: "summary_large_image",
@@ -95,7 +95,7 @@ function Index() {
         setStreak(synced.streak);
       })
       .catch((err) => {
-        console.warn("[PCC Supabase] Initial mount sync failed:", err);
+        console.warn("[REDFOX Supabase] Initial mount sync failed:", err);
       });
   }, []);
 

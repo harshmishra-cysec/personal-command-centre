@@ -1,6 +1,6 @@
 {
-  "name": "Personal Command Center",
-  "description": "Tactical dark-mode dashboard tracking cybersecurity, academics, and AIML objectives with daily focus stats and streaks.",
+  "name": "REDFOX",
+  "description": "Tactical dark-mode command deck tracking cybersecurity, academics, and AIML objectives with daily focus stats and streaks.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

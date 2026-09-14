@@ -13,6 +13,7 @@ import {
   Flame,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { RedFoxLogo } from "@/components/dashboard/RedFoxLogo";
 
 interface IntroScreenProps {
   onComplete: () => void;
@@ -319,7 +320,7 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
                     </div>
 
                     <div className="font-mono text-base sm:text-lg font-black text-cyan-400 tracking-wider drop-shadow-[0_0_10px_rgba(0,229,255,0.7)]">
-                      // SYSTEM READY // COMMAND CENTER ONLINE
+                      // SYSTEM READY // REDFOX DECK ONLINE
                     </div>
 
                     <p className="text-xs text-muted-foreground font-mono">
@@ -341,15 +342,18 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
         {stage === 4 && (
           <div className="space-y-6 animate-in fade-in zoom-in-95 duration-700 w-full max-w-xl">
             {/* Holographic Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-cyan-400/40 bg-cyan-950/30 font-mono text-xs text-cyan-300 shadow-[0_0_20px_rgba(0,229,255,0.25)]">
-              <Sparkles className="size-3.5 text-cyan-400" />
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#E63946]/40 bg-[#E63946]/10 font-mono text-xs text-[#FF6B6B] shadow-[0_0_20px_rgba(230,57,70,0.3)]">
+              <Sparkles className="size-3.5 text-[#E63946]" />
               <span className="font-bold">VERSION 2.5 // TACTICAL SUITE</span>
             </div>
 
-            {/* App Brand Title */}
-            <div className="space-y-2">
-              <h1 className="font-mono text-3xl sm:text-5xl font-black uppercase tracking-wider text-foreground drop-shadow-[0_0_25px_rgba(0,229,255,0.4)]">
-                PERSONAL <span className="text-cyan-400">COMMAND</span> CENTER
+            {/* Fox Logo & App Brand Title */}
+            <div className="space-y-3 flex flex-col items-center">
+              <RedFoxLogo size={76} glow={true} className="animate-pulse" />
+              <h1 className="font-mono text-3xl sm:text-5xl font-black uppercase tracking-wider text-foreground">
+                <span className="text-[#E63946] drop-shadow-[0_0_25px_rgba(230,57,70,0.6)]">
+                  REDFOX
+                </span>
               </h1>
               <p className="font-mono text-sm sm:text-base text-muted-foreground font-medium max-w-lg mx-auto">
                 Tactical Execution Engine // Zero Friction Focus
@@ -380,9 +384,9 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
               <button
                 type="button"
                 onClick={onComplete}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-xl border-2 border-cyan-400 bg-cyan-500/20 text-cyan-300 font-mono text-sm font-extrabold tracking-wider hover:bg-cyan-400 hover:text-black hover:shadow-[0_0_30px_rgba(0,229,255,0.7)] transition-all duration-300 group cursor-pointer animate-pulse"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-xl border-2 border-[#E63946] bg-[#E63946]/20 text-[#FF8585] font-mono text-sm font-extrabold tracking-wider hover:bg-[#E63946] hover:text-white hover:shadow-[0_0_30px_rgba(230,57,70,0.8)] transition-all duration-300 group cursor-pointer animate-pulse"
               >
-                <span>[ INITIALIZE COMMAND / START ]</span>
+                <span>[ INITIALIZE REDFOX / START ]</span>
                 <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>

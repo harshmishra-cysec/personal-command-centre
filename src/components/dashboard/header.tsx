@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Quote, Terminal } from "lucide-react";
+import { Quote } from "lucide-react";
 import { QUOTES } from "@/lib/dash-data";
 import { getSyncStatus, subscribeSyncStatus, type SyncStatus } from "@/lib/pcc-storage";
+import { RedFoxLogo } from "@/components/dashboard/RedFoxLogo";
 
 export function DashHeader({
   onReplayIntro,
@@ -55,17 +56,18 @@ export function DashHeader({
             className="min-w-0 text-left group cursor-pointer hover:opacity-90 transition-opacity focus:outline-none"
             title="Replay System Intro"
           >
-            <div className="flex items-center gap-2">
-              <span className="lg:hidden grid size-6 shrink-0 place-items-center rounded border border-border bg-background text-primary group-hover:border-primary/80 group-hover:shadow-[0_0_10px_rgba(0,229,255,0.3)] transition-all">
-                <Terminal className="size-3.5" />
-              </span>
-              <h1 className="truncate font-display text-[13px] font-semibold tracking-[0.28em] text-foreground group-hover:text-primary transition-colors lg:text-sm">
-                PERSONAL COMMAND CENTER
+            <div className="flex items-center gap-2.5">
+              <RedFoxLogo
+                size={30}
+                className="shrink-0 group-hover:scale-105 transition-transform"
+              />
+              <h1 className="truncate font-display text-[15px] font-black tracking-[0.28em] text-[#E63946] drop-shadow-[0_0_12px_rgba(230,57,70,0.55)] group-hover:text-[#FF4D5E] transition-colors lg:text-base">
+                REDFOX
               </h1>
             </div>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               <p className="label-mono truncate text-muted-foreground group-hover:text-foreground transition-colors">
-                operator // harsh · status: engaged
+                OPERATOR // HARSH · STATUS: ENGAGED
               </p>
               <span className="text-muted-foreground/40 text-[10px]">·</span>
               {syncStatus === "synced" ? (
@@ -74,7 +76,7 @@ export function DashHeader({
                   title="Connected & synced with Supabase cloud"
                 >
                   <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" />
-                  CLOUD SYNCED // SUPABASE
+                  STATUS: OPERATIONAL // CLOUD SYNCED
                 </span>
               ) : syncStatus === "syncing" ? (
                 <span

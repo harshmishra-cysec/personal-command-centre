@@ -354,7 +354,7 @@ export async function syncAllFromSupabase(): Promise<SyncedCloudData> {
         saveBoards(finalBoards);
       }
     } catch (taskError) {
-      console.warn("[PCC Supabase] Tasks sync error, falling back to local:", taskError);
+      console.warn("[REDFOX Supabase] Tasks sync error, falling back to local:", taskError);
     }
 
     // 2. Fetch / Seed Roadmaps
@@ -389,7 +389,7 @@ export async function syncAllFromSupabase(): Promise<SyncedCloudData> {
         saveRoadmaps(finalRoadmaps);
       }
     } catch (roadmapError) {
-      console.warn("[PCC Supabase] Roadmaps sync error, falling back to local:", roadmapError);
+      console.warn("[REDFOX Supabase] Roadmaps sync error, falling back to local:", roadmapError);
     }
 
     // 3. Fetch / Seed User Stats
@@ -418,7 +418,7 @@ export async function syncAllFromSupabase(): Promise<SyncedCloudData> {
         }
       }
     } catch (statsError) {
-      console.warn("[PCC Supabase] User stats sync error, falling back to local:", statsError);
+      console.warn("[REDFOX Supabase] User stats sync error, falling back to local:", statsError);
     }
 
     setSyncStatus("synced");
@@ -430,7 +430,7 @@ export async function syncAllFromSupabase(): Promise<SyncedCloudData> {
       isCloud: true,
     };
   } catch (err) {
-    console.warn("[PCC Supabase] Cloud sync error, graceful fallback to local storage:", err);
+    console.warn("[REDFOX Supabase] Cloud sync error, graceful fallback to local storage:", err);
     setSyncStatus("offline");
     return {
       boards: loadBoards(),
@@ -449,13 +449,13 @@ export async function insertTaskToSupabase(task: Task, pillar: Pillar): Promise<
     const payload = toSupabaseTaskPayload(task, pillar);
     const { error } = await supabase.from("tasks").insert(payload);
     if (error) {
-      console.warn("[PCC Supabase] Failed to insert task row:", error);
+      console.warn("[REDFOX Supabase] Failed to insert task row:", error);
       setSyncStatus("offline");
     } else {
       setSyncStatus("synced");
     }
   } catch (err) {
-    console.warn("[PCC Supabase] Exception inserting task:", err);
+    console.warn("[REDFOX Supabase] Exception inserting task:", err);
     setSyncStatus("offline");
   }
 }
@@ -481,13 +481,13 @@ export async function updateTaskInSupabase(task: Task, pillar?: Pillar): Promise
 
     const { error } = await supabase.from("tasks").update(updatePayload).eq("id", task.id);
     if (error) {
-      console.warn("[PCC Supabase] Failed to update task row:", error);
+      console.warn("[REDFOX Supabase] Failed to update task row:", error);
       setSyncStatus("offline");
     } else {
       setSyncStatus("synced");
     }
   } catch (err) {
-    console.warn("[PCC Supabase] Exception updating task row:", err);
+    console.warn("[REDFOX Supabase] Exception updating task row:", err);
     setSyncStatus("offline");
   }
 }
@@ -498,13 +498,13 @@ export async function deleteTaskFromSupabase(taskId: string): Promise<void> {
   try {
     const { error } = await supabase.from("tasks").delete().eq("id", taskId);
     if (error) {
-      console.warn("[PCC Supabase] Failed to delete task row:", error);
+      console.warn("[REDFOX Supabase] Failed to delete task row:", error);
       setSyncStatus("offline");
     } else {
       setSyncStatus("synced");
     }
   } catch (err) {
-    console.warn("[PCC Supabase] Exception deleting task row:", err);
+    console.warn("[REDFOX Supabase] Exception deleting task row:", err);
     setSyncStatus("offline");
   }
 }
@@ -533,7 +533,7 @@ export async function upsertRoadmapTrackToSupabase(
     }
     setSyncStatus("synced");
   } catch (err) {
-    console.warn("[PCC Supabase] Exception upserting roadmap track:", err);
+    console.warn("[REDFOX Supabase] Exception upserting roadmap track:", err);
     setSyncStatus("offline");
   }
 }
@@ -568,13 +568,13 @@ export async function persistUserStatsToSupabase(
     }
     const { error } = await supabase.from("user_stats").upsert(payload, { onConflict: "id" });
     if (error) {
-      console.warn("[PCC Supabase] Failed to persist user stats:", error);
+      console.warn("[REDFOX Supabase] Failed to persist user stats:", error);
       setSyncStatus("offline");
     } else {
       setSyncStatus("synced");
     }
   } catch (err) {
-    console.warn("[PCC Supabase] Exception persisting user stats:", err);
+    console.warn("[REDFOX Supabase] Exception persisting user stats:", err);
     setSyncStatus("offline");
   }
 }
