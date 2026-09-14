@@ -67,7 +67,6 @@ export function DashHeader({
             </div>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               <p className="label-mono truncate text-muted-foreground group-hover:text-foreground transition-colors">
-                OPERATOR // HARSH · STATUS: ENGAGED
               </p>
               <span className="text-muted-foreground/40 text-[10px]">·</span>
               {syncStatus === "synced" ? (
@@ -76,7 +75,7 @@ export function DashHeader({
                   title="Connected & synced with Supabase cloud"
                 >
                   <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" />
-                  STATUS: OPERATIONAL // CLOUD SYNCED
+                  STATUS: OPERATIONAL
                 </span>
               ) : syncStatus === "syncing" ? (
                 <span
@@ -92,7 +91,7 @@ export function DashHeader({
                   title="Local storage fallback (offline / local only)"
                 >
                   <span className="size-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
-                  LOCAL ONLY // OFFLINE
+                  LOCAL ONLY
                 </span>
               )}
             </div>

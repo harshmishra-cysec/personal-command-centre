@@ -344,7 +344,7 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
             {/* Holographic Badge */}
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#E63946]/40 bg-[#E63946]/10 font-mono text-xs text-[#FF6B6B] shadow-[0_0_20px_rgba(230,57,70,0.3)]">
               <Sparkles className="size-3.5 text-[#E63946]" />
-              <span className="font-bold">VERSION 2.5 // TACTICAL SUITE</span>
+              <span className="font-bold">VERSION 2.5</span>
             </div>
 
             {/* Fox Logo & App Brand Title */}
@@ -356,7 +356,7 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
                 </span>
               </h1>
               <p className="font-mono text-sm sm:text-base text-muted-foreground font-medium max-w-lg mx-auto">
-                Tactical Execution Engine // Zero Friction Focus
+                Rapid Engagement & Defense: Field Operations & Cyber System
               </p>
             </div>
 
@@ -386,7 +386,7 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
                 onClick={onComplete}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-xl border-2 border-[#E63946] bg-[#E63946]/20 text-[#FF8585] font-mono text-sm font-extrabold tracking-wider hover:bg-[#E63946] hover:text-white hover:shadow-[0_0_30px_rgba(230,57,70,0.8)] transition-all duration-300 group cursor-pointer animate-pulse"
               >
-                <span>[ INITIALIZE REDFOX / START ]</span>
+                <span>[ INITIALIZE REDFOX ]</span>
                 <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>

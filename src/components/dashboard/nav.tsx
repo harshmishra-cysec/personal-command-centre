@@ -15,7 +15,7 @@ export type TabView = "today" | "roadmaps" | "reality" | "stats";
 export const NAV_ITEMS = [
   { id: "today", label: "Today", icon: CalendarCheck },
   { id: "roadmaps", label: "Roadmaps", icon: Map },
-  { id: "reality", label: "Reality Check", icon: ScanEye },
+  { id: "reality", label: "Re-Check", icon: ScanEye },
   { id: "stats", label: "Stats", icon: BarChart3 },
 ] as const;
 
