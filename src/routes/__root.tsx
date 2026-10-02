@@ -77,22 +77,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "REDFOX" },
+      { title: "MOVONE" },
       {
         name: "description",
         content:
-          "Tactical dark-mode command deck tracking cybersecurity, academics, and AIML objectives with daily focus stats, roadmaps, and real-time streaks.",
+          "MOVONE — Tactical command deck tracking cybersecurity, academics, and AIML objectives. One day or Day One. You decide.",
       },
-      { name: "author", content: "REDFOX" },
-      { property: "og:title", content: "REDFOX" },
+      { name: "author", content: "MOVONE" },
+      { property: "og:title", content: "MOVONE" },
       {
         property: "og:description",
         content:
-          "Tactical dark-mode command deck tracking cybersecurity, academics, and AIML objectives with daily focus stats, roadmaps, and real-time streaks.",
+          "MOVONE — Tactical command deck tracking cybersecurity, academics, and AIML objectives. One day or Day One. You decide.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@RedFoxOps" },
+      { name: "twitter:site", content: "@MovoneOps" },
     ],
     links: [
       {

@@ -1,6 +1,6 @@
 {
-  "name": "REDFOX",
-  "description": "Tactical dark-mode command deck tracking cybersecurity, academics, and AIML objectives with daily focus stats and streaks.",
+  "name": "MOVONE",
+  "description": "MOVONE — Tactical dark-mode command deck tracking cybersecurity, academics, and AIML objectives with daily focus stats and streaks. One day or Day One. You decide.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

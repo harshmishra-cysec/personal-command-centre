@@ -8,7 +8,7 @@ import {
   ScanEye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { RedFoxLogo } from "@/components/dashboard/RedFoxLogo";
+import { MovoneLogo } from "@/components/dashboard/MovoneLogo";
 
 export type TabView = "today" | "roadmaps" | "reality" | "stats";
 
@@ -53,16 +53,16 @@ export function DesktopSidebar({
           className="flex w-full items-center gap-2.5 rounded-md p-1 text-left group cursor-pointer hover:text-primary transition-colors focus:outline-none"
           title="Replay System Intro"
         >
-          <span className="grid size-8 shrink-0 place-items-center rounded-md border border-border/80 bg-background/80 group-hover:border-[#E63946]/50 transition-all">
-            <RedFoxLogo
+          <span className="grid size-8 shrink-0 place-items-center rounded-md border border-border/80 bg-background/80 group-hover:border-[#D4AF37]/50 transition-all">
+            <MovoneLogo
               size={22}
               glow={false}
               className="group-hover:scale-110 transition-transform"
             />
           </span>
           {!collapsed && (
-            <span className="truncate font-mono text-[11px] font-bold tracking-[0.22em] text-foreground/80 group-hover:text-[#E63946] transition-colors">
-              REDFOX
+            <span className="truncate font-mono text-[11px] font-bold tracking-[0.22em] text-foreground/80 group-hover:text-[#D4AF37] transition-colors">
+              MOVONE
             </span>
           )}
         </button>

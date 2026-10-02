@@ -1,6 +1,8 @@
-# Command Center
+# MOVONE — Command Center
 
-Create a sophisticated, responsive Next.js/React dashboard application using Tailwind CSS, Shadcn UI components, and Lucide icons.
+> *"One day or Day One. You decide."*
+
+MOVONE (MOVE + ONE) is a tactical command deck tracking cybersecurity, academics, and AIML objectives with daily focus stats, roadmaps, and real-time streaks.
 
 The aesthetic must be "Tactical Cyber Modern"—inspired by terminal HUDs and sleek dark-mode productivity apps (like Linear), NOT cheap neon sci-fi or a mobile game. Use subtle depth, thin borders, and highly functional information layout. Avoid generic white card UI.
 

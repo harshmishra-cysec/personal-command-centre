@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Quote } from "lucide-react";
 import { QUOTES } from "@/lib/dash-data";
 import { getSyncStatus, subscribeSyncStatus, type SyncStatus } from "@/lib/pcc-storage";
-import { RedFoxLogo } from "@/components/dashboard/RedFoxLogo";
+import { MovoneLogo } from "@/components/dashboard/MovoneLogo";
 
 export function DashHeader({
   onReplayIntro,
@@ -57,12 +57,12 @@ export function DashHeader({
             title="Replay System Intro"
           >
             <div className="flex items-center gap-2.5">
-              <RedFoxLogo
+              <MovoneLogo
                 size={30}
                 className="shrink-0 group-hover:scale-105 transition-transform"
               />
-              <h1 className="truncate font-display text-[15px] font-black tracking-[0.28em] text-[#E63946] drop-shadow-[0_0_12px_rgba(230,57,70,0.55)] group-hover:text-[#FF4D5E] transition-colors lg:text-base">
-                REDFOX
+              <h1 className="truncate font-display text-[15px] font-black tracking-[0.28em] text-[#D4AF37] drop-shadow-[0_0_12px_rgba(212,175,55,0.45)] group-hover:text-[#F5E296] transition-colors lg:text-base">
+                MOVONE
               </h1>
             </div>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">

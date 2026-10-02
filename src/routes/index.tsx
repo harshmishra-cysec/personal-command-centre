@@ -31,13 +31,13 @@ import { computeFocusHoursFromBoards } from "@/lib/stats-data";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "REDFOX" },
+      { title: "MOVONE" },
       {
         name: "description",
         content:
-          "Tactical dark-mode command deck tracking cybersecurity, academics, and AIML objectives with daily focus stats and streaks.",
+          "MOVONE — Tactical command deck tracking cybersecurity, academics, and AIML objectives. One day or Day One. You decide.",
       },
-      { property: "og:title", content: "REDFOX" },
+      { property: "og:title", content: "MOVONE" },
       {
         name: "twitter:card",
         content: "summary_large_image",
@@ -96,7 +96,7 @@ function Index() {
         setStreak(synced.streak);
       })
       .catch((err) => {
-        console.warn("[REDFOX Supabase] Initial mount sync failed:", err);
+        console.warn("[MOVONE Supabase] Initial mount sync failed:", err);
       });
   }, []);
 
