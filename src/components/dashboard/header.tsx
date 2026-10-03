@@ -56,19 +56,14 @@ export function DashHeader({
             className="min-w-0 text-left group cursor-pointer hover:opacity-90 transition-opacity focus:outline-none"
             title="Replay System Intro"
           >
-            <div className="flex items-center gap-2.5">
-              <MovoneLogo
-                size={30}
-                className="shrink-0 group-hover:scale-105 transition-transform"
+            <div className="flex items-center">
+              <img
+                src="/movone-logo.svg"
+                alt="MOVONE"
+                className="h-7 sm:h-8 w-auto object-contain transition-transform group-hover:scale-[1.02] drop-shadow-[0_0_14px_rgba(212,175,55,0.35)]"
               />
-              <h1 className="truncate font-display text-[15px] font-black tracking-[0.28em] text-[#D4AF37] drop-shadow-[0_0_12px_rgba(212,175,55,0.45)] group-hover:text-[#F5E296] transition-colors lg:text-base">
-                MOVONE
-              </h1>
             </div>
-            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-              <p className="label-mono truncate text-muted-foreground group-hover:text-foreground transition-colors">
-              </p>
-              <span className="text-muted-foreground/40 text-[10px]">·</span>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
               {syncStatus === "synced" ? (
                 <span
                   className="inline-flex items-center gap-1.5 font-mono text-[9.5px] text-emerald-400 font-semibold tracking-wider"

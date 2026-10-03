@@ -53,17 +53,22 @@ export function DesktopSidebar({
           className="flex w-full items-center gap-2.5 rounded-md p-1 text-left group cursor-pointer hover:text-primary transition-colors focus:outline-none"
           title="Replay System Intro"
         >
-          <span className="grid size-8 shrink-0 place-items-center rounded-md border border-border/80 bg-background/80 group-hover:border-[#D4AF37]/50 transition-all">
-            <MovoneLogo
-              size={22}
-              glow={false}
-              className="group-hover:scale-110 transition-transform"
-            />
-          </span>
-          {!collapsed && (
-            <span className="truncate font-mono text-[11px] font-bold tracking-[0.22em] text-foreground/80 group-hover:text-[#D4AF37] transition-colors">
-              MOVONE
+          {collapsed ? (
+            <span className="grid size-8 shrink-0 place-items-center rounded-md border border-border/80 bg-background/80 group-hover:border-[#D4AF37]/50 transition-all">
+              <img
+                src="/favicon.svg"
+                alt="MOVONE"
+                className="size-6 object-contain group-hover:scale-110 transition-transform"
+              />
             </span>
+          ) : (
+            <div className="flex items-center px-1">
+              <img
+                src="/movone-logo.svg"
+                alt="MOVONE"
+                className="h-6 w-auto max-w-[180px] object-contain group-hover:scale-[1.02] transition-transform drop-shadow-[0_0_10px_rgba(212,175,55,0.3)]"
+              />
+            </div>
           )}
         </button>
       </div>
