@@ -52,7 +52,7 @@ export function MovoneLogo({
       style={{ width: pixelSize, height: pixelSize }}
     >
       <img
-        src="/favicon.svg"
+        src="/favicon2.svg"
         alt="MOVONE"
         className={cn(
           "w-full h-full object-contain transition-all duration-300",

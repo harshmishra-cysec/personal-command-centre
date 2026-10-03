@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { DesktopSidebar, MobileBottomNav, type TabView } from "@/components/dashboard/nav";
+import { MobileBottomNav, type TabView } from "@/components/dashboard/nav";
 import { DashHeader } from "@/components/dashboard/header";
 import { StatsRow } from "@/components/dashboard/stats";
 import { PillarBoard } from "@/components/dashboard/pillar-board";
@@ -317,26 +317,31 @@ function Index() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="relative min-h-screen bg-transparent text-foreground flex flex-col overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200">
       {/* Interactive TryHackMe Breach & Overclock Intro Sequence */}
       {showIntro && <IntroScreen onComplete={handleIntroComplete} />}
 
-      <DesktopSidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onReplayIntro={handleReplayIntro}
-      />
+      <div className="relative z-0 flex min-w-0 flex-1 flex-col">
+        <DashHeader
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onReplayIntro={handleReplayIntro}
+          syncStatus={syncStatus}
+        />
 
-      <div className="grid-backdrop flex min-w-0 flex-1 flex-col">
-        <DashHeader onReplayIntro={handleReplayIntro} syncStatus={syncStatus} />
-
-        <main className="flex-1 space-y-4 px-4 pt-4 pb-24 lg:px-6 lg:pb-8">
+        <main className="flex-1 w-full max-w-[1600px] mx-auto space-y-4 px-4 pt-4 pb-24 sm:px-6 lg:px-8 lg:pb-12">
           {activeTab === "today" && (
             <>
-              <div className="flex items-center gap-3">
-                <span className="size-1.5 rounded-full bg-cyber" />
-                <h2 className="label-mono text-foreground">Daily Dash</h2>
-                <span className="h-px flex-1 bg-border" />
+              <div className="flex items-center justify-between gap-3 pb-1 border-b border-white/[0.07]">
+                <div className="flex items-center gap-2.5">
+                  <span className="size-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00e5ff] animate-pulse" />
+                  <h2 className="font-mono text-xs font-bold tracking-widest text-cyan-300 uppercase">
+                    DAILY DASH // MISSION CONTROL
+                  </h2>
+                </div>
+                <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider hidden sm:inline">
+                  TACTICAL ALLOCATION & OBJECTIVES
+                </span>
               </div>
 
               <StatsRow completion={completion} streak={streak} focusedHours={focusedHours} />
