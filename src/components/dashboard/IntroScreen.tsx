@@ -28,7 +28,7 @@ export const TIMINGS = {
   EXIT_DURATION_MS: 500,
 } as const;
 
-type IntroPhase = "play" | "hero" | "login" | "exiting";
+type IntroScreenMode = "play" | "hero" | "login";
 
 interface IntroScreenProps {
   onComplete: () => void;
@@ -38,18 +38,22 @@ const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"] as const;
 const RANKS = ["8", "7", "6", "5", "4", "3", "2", "1"] as const;
 
 export function IntroScreen({ onComplete }: IntroScreenProps) {
-  const [phase, setPhase] = useState<IntroPhase>("play");
+  // Separate which screen is shown from whether the exit animation is running
+  const [screen, setScreen] = useState<IntroScreenMode>("play");
+  const [exiting, setExiting] = useState(false);
   const [jumpedToHero, setJumpedToHero] = useState(false);
+  const [heroRevealed, setHeroRevealed] = useState(false);
   const [isReduced, setIsReduced] = useState(false);
   const hasCompletedRef = useRef(false);
   const loginButtonRef = useRef<HTMLButtonElement>(null);
 
   // Jump straight to the hero screen (used by SKIP, Esc, Space, Enter, or click during play)
   const jumpToHero = useCallback(() => {
-    if (phase !== "play") return;
+    if (screen !== "play" || exiting) return;
     setJumpedToHero(true);
-    setPhase("hero");
-  }, [phase]);
+    setHeroRevealed(true);
+    setScreen("hero");
+  }, [screen, exiting]);
 
   // Session check on initial mount
   useEffect(() => {
@@ -66,14 +70,22 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
       const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
       if (mediaQuery.matches) {
         setIsReduced(true);
-        setPhase("hero");
+        setJumpedToHero(true);
+        setHeroRevealed(true);
+        setScreen("hero");
         return;
       }
     }
 
     // Auto-advance to hero screen when the entrance animation reaches the LOGIN button reveal at 5.40s
     const heroTimer = setTimeout(() => {
-      setPhase((prev) => (prev === "play" ? "hero" : prev));
+      setScreen((prev) => {
+        if (prev === "play") {
+          setHeroRevealed(true);
+          return "hero";
+        }
+        return prev;
+      });
     }, TIMINGS.LOGIN_BTN_APPEAR_MS);
 
     return () => {
@@ -81,20 +93,20 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
     };
   }, [onComplete]);
 
-  // Focus the LOGIN button when entering the 'hero' phase
+  // Focus the LOGIN button when entering the 'hero' screen
   useEffect(() => {
-    if (phase === "hero") {
+    if (screen === "hero" && !exiting) {
       const focusTimer = setTimeout(() => {
         loginButtonRef.current?.focus({ preventScroll: true });
       }, 50);
       return () => clearTimeout(focusTimer);
     }
-  }, [phase]);
+  }, [screen, exiting]);
 
-  // Keyboard shortcut listener: during 'play' phase only
+  // Keyboard shortcut listener: during 'play' screen only
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (phase === "play" && (e.key === "Escape" || e.key === " " || e.key === "Enter")) {
+      if (screen === "play" && !exiting && (e.key === "Escape" || e.key === " " || e.key === "Enter")) {
         e.preventDefault();
         jumpToHero();
       }
@@ -104,19 +116,19 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [phase, jumpToHero]);
+  }, [screen, exiting, jumpToHero]);
 
   // Transition to login screen on LOGIN button click
   const handleLoginClick = () => {
-    if (phase !== "hero") return;
-    setPhase("login");
+    if (screen !== "hero" || exiting) return;
+    setScreen("login");
   };
 
-  // On successful login submission: wipe curtain and complete
+  // On successful login submission: wipe curtain while keeping the active screen mounted
   const handleLoginSuccess = useCallback(() => {
     if (hasCompletedRef.current) return;
     hasCompletedRef.current = true;
-    setPhase("exiting");
+    setExiting(true);
 
     try {
       sessionStorage.setItem("movone_intro_seen", "1");
@@ -124,10 +136,11 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
       // Ignore storage write errors
     }
 
+    const exitDuration = isReduced ? 300 : TIMINGS.EXIT_DURATION_MS;
     setTimeout(() => {
       onComplete();
-    }, TIMINGS.EXIT_DURATION_MS);
-  }, [onComplete]);
+    }, exitDuration);
+  }, [onComplete, isReduced]);
 
   // 64-square grid array (Rank 8 at row 0 down to Rank 1 at row 7)
   const squares = Array.from({ length: 64 }, (_, i) => {
@@ -144,19 +157,23 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
     <div
       role="status"
       aria-label="MOVONE starting"
-      onClick={phase === "play" ? jumpToHero : undefined}
+      onClick={screen === "play" && !exiting ? jumpToHero : undefined}
       className={`fixed inset-0 z-50 flex items-center justify-center bg-[#06080E] select-none overflow-hidden ${
-        phase === "play" ? "cursor-pointer" : ""
-      } ${phase === "exiting" ? "pcc-intro-curtain-anim pointer-events-none" : ""}`}
+        screen === "play" && !exiting ? "cursor-pointer" : ""
+      } ${
+        exiting
+          ? isReduced
+            ? "transition-opacity duration-300 opacity-0 pointer-events-none"
+            : "pcc-intro-curtain-anim pointer-events-none"
+          : ""
+      }`}
       style={{ "--sq": "min(11vw, 70px)" } as React.CSSProperties}
     >
       {/* CHANGE 3: VERBATIM COPY OF GLOBAL PERSISTENT BACKGROUND LAYER FROM __root.tsx */}
       <div
         aria-hidden
         className={`absolute inset-0 pointer-events-none overflow-hidden bg-[#06080e] transition-opacity duration-300 ${
-          jumpedToHero || isReduced || phase === "login"
-            ? "opacity-100"
-            : phase === "hero"
+          jumpedToHero || isReduced || heroRevealed || screen === "hero" || screen === "login"
             ? "opacity-100"
             : "opacity-0 pcc-intro-backdrop-fade"
         }`}
@@ -199,7 +216,7 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
       </div>
 
       {/* Top-right Action Button: SKIP during animation (fades out at 4.2s), LOGIN during hero screen */}
-      {phase === "play" && !jumpedToHero && !isReduced && (
+      {screen === "play" && !jumpedToHero && !isReduced && !exiting && (
         <button
           type="button"
           onClick={(e) => {
@@ -213,16 +230,14 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
       )}
 
       {/* CHANGE 2: Prominent Square-cornered LOGIN Button in top-right */}
-      {phase !== "login" && (
+      {screen === "hero" && !exiting && (
         <button
           ref={loginButtonRef}
           type="button"
           onClick={handleLoginClick}
           aria-label="Login to MOVONE"
           className={`fixed top-4 right-4 sm:top-5 sm:right-5 z-50 pcc-login-btn text-[13px] sm:text-[14px] ${
-            jumpedToHero || isReduced
-              ? "pcc-intro-quick-fade pointer-events-auto"
-              : phase === "hero"
+            jumpedToHero || isReduced || heroRevealed
               ? "opacity-100 pointer-events-auto"
               : "opacity-0 pcc-intro-login-btn-in pointer-events-none"
           }`}
@@ -232,7 +247,7 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
       )}
 
       {/* PHASE 1: Chessboard, Knight Move & Telemetry (0.00s - 4.50s) */}
-      {phase === "play" && !jumpedToHero && !isReduced && (
+      {screen === "play" && !jumpedToHero && !isReduced && (
         <div className="relative flex flex-col items-center justify-center pcc-intro-phase1-exit">
           {/* Board container in mild perspective */}
           <div className="relative pcc-intro-board-anim">
@@ -348,17 +363,19 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
         </div>
       )}
 
-      {/* PHASE 2: HERO REVEAL (Mounted at t=0, revealed 4.20s - 5.40s, stays indefinitely) */}
+      {/* PHASE 2: HERO REVEAL (Visible ONLY when screen === 'hero') */}
       <div
-        className={`absolute inset-0 flex items-center justify-center p-4 sm:p-6 pointer-events-none z-30 transition-opacity duration-300 ${
-          phase === "login" ? "opacity-0 pointer-events-none" : "opacity-100"
+        className={`absolute inset-0 flex items-center justify-center p-4 sm:p-6 transition-opacity duration-300 ${
+          screen === "hero"
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
         }`}
       >
         <div className="w-full max-w-[1100px] flex flex-col min-[900px]:grid min-[900px]:grid-cols-2 items-center gap-4 sm:gap-6 min-[900px]:gap-12 pointer-events-auto">
           {/* LEFT: Hero Illustration Panel */}
           <div
             className={`relative rounded-2xl border border-white/10 bg-[#0F1523] p-3 sm:p-4 shadow-2xl flex items-center justify-center overflow-hidden w-full max-w-[340px] min-[900px]:max-w-none ${
-              jumpedToHero || isReduced
+              jumpedToHero || isReduced || heroRevealed
                 ? "opacity-100"
                 : "opacity-0 pcc-intro-reveal-hero"
             }`}
@@ -383,7 +400,7 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
             {/* Logo frame with 4 gold corner brackets */}
             <div
               className={`relative rounded-xl border border-white/10 bg-[#0F1523] p-2 sm:p-2.5 shadow-xl w-full max-w-[min(70vw,420px)] min-[900px]:max-w-[min(100%,420px)] flex items-center justify-center overflow-hidden ${
-                jumpedToHero || isReduced
+                jumpedToHero || isReduced || heroRevealed
                   ? "opacity-100"
                   : "opacity-0 pcc-intro-reveal-logo"
               }`}
@@ -404,7 +421,7 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
             {/* Eyebrow */}
             <span
               className={`font-mono text-[12px] sm:text-[13px] uppercase tracking-[0.3em] text-[#D4AF37] font-medium mt-3 sm:mt-4 ${
-                jumpedToHero || isReduced
+                jumpedToHero || isReduced || heroRevealed
                   ? "opacity-100"
                   : "opacity-0 pcc-intro-reveal-eyebrow"
               }`}
@@ -415,7 +432,7 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
             {/* Tagline */}
             <h1
               className={`font-display font-bold leading-[1.1] text-[clamp(1.75rem,1rem+3vw,3.5rem)] text-white mt-1.5 sm:mt-2 ${
-                jumpedToHero || isReduced
+                jumpedToHero || isReduced || heroRevealed
                   ? "opacity-100"
                   : "opacity-0 pcc-intro-reveal-tagline"
               }`}
@@ -426,7 +443,7 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
             {/* Description */}
             <p
               className={`font-sans font-normal leading-[1.6] text-[clamp(0.95rem,0.6rem+1vw,1.25rem)] text-white/70 max-w-[52ch] mt-2.5 sm:mt-3 ${
-                jumpedToHero || isReduced
+                jumpedToHero || isReduced || heroRevealed
                   ? "opacity-100"
                   : "opacity-0 pcc-intro-reveal-desc"
               }`}
@@ -437,7 +454,7 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
             {/* Pillar chips */}
             <div
               className={`flex flex-wrap gap-2 mt-3 sm:mt-4 justify-center min-[900px]:justify-start ${
-                jumpedToHero || isReduced
+                jumpedToHero || isReduced || heroRevealed
                   ? "opacity-100"
                   : "opacity-0 pcc-intro-reveal-chips"
               }`}
@@ -456,11 +473,15 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
         </div>
       </div>
 
-      {/* PHASE 3: LOGIN / CREATE ACCOUNT SCREEN (Rendered when phase === 'login') */}
-      {phase === "login" && (
-        <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 flex items-center justify-center">
+      {/* PHASE 3: LOGIN / CREATE ACCOUNT SCREEN (Rendered when screen === 'login', stays mounted during exit) */}
+      {screen === "login" && (
+        <div className={`fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 flex items-center justify-center ${exiting ? "pointer-events-none" : ""}`}>
           <LoginScreen
-            onBack={() => setPhase("hero")}
+            onBack={() => {
+              if (exiting) return;
+              setHeroRevealed(true);
+              setScreen("hero");
+            }}
             onSuccess={handleLoginSuccess}
           />
         </div>
