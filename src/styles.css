@@ -175,3 +175,357 @@
   scrollbar-width: thin;
   scrollbar-color: #ffffff26 transparent;
 }
+
+/* ==========================================================================
+   THE OPENING MOVE - Intro Sequence Keyframes & Utilities (pcc-intro-)
+   ========================================================================== */
+
+@keyframes pcc-intro-board-in {
+  0% {
+    opacity: 0;
+    transform: perspective(1200px) rotateX(18deg) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1200px) rotateX(18deg) scale(1);
+  }
+}
+
+@keyframes pcc-intro-scanline {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  85% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes pcc-intro-knight-appear {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pcc-intro-gold-pulse {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 0.85;
+    transform: scale(1.25);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+@keyframes pcc-intro-knight-move {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  16% {
+    transform: translate3d(0, 0, 0) scale(1.25);
+  }
+  62% {
+    transform: translate3d(0, calc(var(--sq) * -2), 0) scale(1.25);
+  }
+  87% {
+    transform: translate3d(calc(var(--sq) * -1), calc(var(--sq) * -2), 0) scale(1.25);
+  }
+  94% {
+    transform: translate3d(calc(var(--sq) * -1), calc(var(--sq) * -2), 0) scale(0.98);
+  }
+  100% {
+    transform: translate3d(calc(var(--sq) * -1), calc(var(--sq) * -2), 0) scale(1);
+  }
+}
+
+@keyframes pcc-intro-trail-v {
+  0% {
+    clip-path: inset(100% 0 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes pcc-intro-trail-h {
+  0% {
+    clip-path: inset(0 100% 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes pcc-intro-landing-pulse {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+
+@keyframes pcc-intro-type1 {
+  0% {
+    clip-path: inset(0 100% 0 0);
+    opacity: 0;
+  }
+  1% {
+    opacity: 1;
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
+@keyframes pcc-intro-type2 {
+  0% {
+    clip-path: inset(0 100% 0 0);
+    opacity: 0;
+  }
+  1% {
+    opacity: 1;
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
+@keyframes pcc-intro-phase1-fadeout {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes pcc-intro-reveal-item {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pcc-intro-glow-breathe {
+  0%, 100% {
+    opacity: 0.22;
+  }
+  50% {
+    opacity: 0.34;
+  }
+}
+
+@keyframes pcc-intro-curtain-exit {
+  0% {
+    clip-path: inset(0 0 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 100% 0);
+  }
+}
+
+@keyframes pcc-intro-reduced-fade {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes pcc-intro-fade-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@utility pcc-intro-board-anim {
+  animation: pcc-intro-board-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@utility pcc-intro-scanline-anim {
+  animation: pcc-intro-scanline 0.7s ease-in-out 0.2s forwards;
+}
+
+@utility pcc-intro-knight-appear-anim {
+  animation: pcc-intro-knight-appear 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
+}
+
+@utility pcc-intro-gold-pulse-anim {
+  animation: pcc-intro-gold-pulse 0.7s ease-out 0.5s both;
+}
+
+@utility pcc-intro-knight-move-anim {
+  animation: pcc-intro-knight-move 1.6s cubic-bezier(0.4, 0, 0.2, 1) 1.2s both;
+}
+
+@utility pcc-intro-trail-v-anim {
+  animation: pcc-intro-trail-v 0.7s cubic-bezier(0.4, 0, 0.2, 1) 1.45s both;
+}
+
+@utility pcc-intro-trail-h-anim {
+  animation: pcc-intro-trail-h 0.45s cubic-bezier(0.4, 0, 0.2, 1) 2.15s both;
+}
+
+@utility pcc-intro-landing-pulse-anim {
+  animation: pcc-intro-landing-pulse 0.6s ease-out 2.8s both;
+}
+
+@utility pcc-intro-type1-anim {
+  animation: pcc-intro-type1 0.65s steps(25, end) 2.8s both;
+}
+
+@utility pcc-intro-type2-anim {
+  animation: pcc-intro-type2 0.55s steps(18, end) 3.45s both;
+}
+
+@utility pcc-intro-phase1-exit {
+  animation: pcc-intro-phase1-fadeout 0.3s ease-out 4.2s forwards;
+}
+
+@utility pcc-intro-backdrop-fade {
+  animation: pcc-intro-reduced-fade 0.6s ease-out 4.2s both;
+}
+
+@utility pcc-intro-reveal-hero {
+  animation: pcc-intro-reveal-item 0.5s cubic-bezier(0.16, 1, 0.3, 1) 4.2s both;
+}
+
+@utility pcc-intro-reveal-logo {
+  animation: pcc-intro-reveal-item 0.5s cubic-bezier(0.16, 1, 0.3, 1) 4.5s both;
+}
+
+@utility pcc-intro-reveal-eyebrow {
+  animation: pcc-intro-reveal-item 0.5s cubic-bezier(0.16, 1, 0.3, 1) 4.7s both;
+}
+
+@utility pcc-intro-reveal-tagline {
+  animation: pcc-intro-reveal-item 0.5s cubic-bezier(0.16, 1, 0.3, 1) 4.85s both;
+}
+
+@utility pcc-intro-reveal-desc {
+  animation: pcc-intro-reveal-item 0.5s cubic-bezier(0.16, 1, 0.3, 1) 5.05s both;
+}
+
+@utility pcc-intro-reveal-chips {
+  animation: pcc-intro-reveal-item 0.5s cubic-bezier(0.16, 1, 0.3, 1) 5.25s both;
+}
+
+@utility pcc-intro-login-btn-in {
+  animation: pcc-intro-reduced-fade 0.4s ease-out 5.4s both;
+}
+
+@utility pcc-intro-glow-anim {
+  animation: pcc-intro-glow-breathe 2.5s ease-in-out infinite;
+}
+
+@utility pcc-intro-quick-fade {
+  animation: pcc-intro-reduced-fade 0.3s ease-out forwards;
+}
+
+@utility pcc-intro-content-fadeout {
+  animation: pcc-intro-fade-out 0.3s ease-out forwards;
+}
+
+@utility pcc-intro-curtain-anim {
+  animation: pcc-intro-curtain-exit 0.5s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+@utility pcc-login-card-in {
+  animation: pcc-intro-reveal-item 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@utility pcc-intro-reduced-anim {
+  animation: pcc-intro-reduced-fade 0.3s ease-out forwards;
+}
+
+/* Sharp, blue-on-hover/active/focus-visible login button */
+.pcc-login-btn {
+  font-family: var(--font-mono, monospace);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  border-radius: 0;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  background-color: #0B1220;
+  color: #FFFFFF;
+  min-height: 44px;
+  padding-left: 28px;
+  padding-right: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+@media (hover: hover) {
+  .pcc-login-btn:hover {
+    border-color: #3B82F6;
+    color: #BFDBFE;
+    background-color: rgba(59, 130, 246, 0.18);
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.5), 0 0 24px rgba(59, 130, 246, 0.45);
+  }
+}
+
+.pcc-login-btn:focus-visible {
+  outline: none;
+  border-color: #3B82F6;
+  color: #BFDBFE;
+  background-color: rgba(59, 130, 246, 0.18);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.5), 0 0 24px rgba(59, 130, 246, 0.45);
+}
+
+.pcc-login-btn:active {
+  border-color: #3B82F6;
+  color: #BFDBFE;
+  background-color: rgba(59, 130, 246, 0.18);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.5), 0 0 24px rgba(59, 130, 246, 0.45);
+  transform: scale(0.97);
+}
+
+.pcc-login-btn:disabled {
+  opacity: 0.9;
+  cursor: not-allowed;
+  transform: none;
+}
+

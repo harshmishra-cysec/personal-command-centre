@@ -9,6 +9,8 @@ import { RoadmapsView } from "@/components/dashboard/roadmaps-view";
 import { RealityCheckView } from "@/components/dashboard/reality-check-view";
 import { StatsView } from "@/components/dashboard/stats-view";
 import { IntroScreen } from "@/components/dashboard/IntroScreen";
+import { TacticalChronometerDock } from "@/components/dashboard/TacticalChronometerDock";
+import { TacticalQuickDock } from "@/components/dashboard/TacticalQuickDock";
 import { TaskStopwatchModal } from "@/components/dashboard/task-stopwatch-modal";
 import { BOARDS, type Pillar, type Task } from "@/lib/dash-data";
 import {
@@ -115,6 +117,11 @@ function Index() {
   };
 
   const handleReplayIntro = () => {
+    try {
+      sessionStorage.removeItem("movone_intro_seen");
+    } catch {
+      // Ignore storage errors in SSR / private browsing
+    }
     setShowIntro(true);
   };
 
@@ -329,7 +336,7 @@ function Index() {
           syncStatus={syncStatus}
         />
 
-        <main className="flex-1 w-full max-w-[1600px] mx-auto space-y-4 px-4 pt-4 pb-24 sm:px-6 lg:px-8 lg:pb-12">
+        <main className="flex-1 w-full max-w-[1720px] mx-auto space-y-4 px-4 pt-4 pb-24 sm:px-6 lg:pl-24 lg:pr-24 xl:pl-28 xl:pr-28 lg:pb-12">
           {activeTab === "today" && (
             <>
               <div className="flex items-center justify-between gap-3 pb-1 border-b border-white/[0.07]">
@@ -368,6 +375,12 @@ function Index() {
           {activeTab === "stats" && <StatsView />}
         </main>
       </div>
+
+      {/* Floating Tactical Chronometer Dock on Left Gutter */}
+      <TacticalChronometerDock />
+
+      {/* Floating Tactical Quick Links Dock on Right Gutter */}
+      <TacticalQuickDock />
 
       <MobileBottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
 

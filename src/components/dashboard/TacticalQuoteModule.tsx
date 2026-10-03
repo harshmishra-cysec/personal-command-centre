@@ -42,7 +42,7 @@ export function TacticalQuoteModule({ className }: TacticalQuoteModuleProps) {
       title="Click to cycle tactical directive"
       className={cn(
         "group relative select-none cursor-pointer overflow-hidden transition-all duration-300",
-        "w-full max-w-[340px] sm:max-w-[380px] lg:max-w-[420px]",
+        "w-full max-w-[270px] sm:max-w-[310px] xl:max-w-[340px]",
         className,
       )}
     >
@@ -52,7 +52,7 @@ export function TacticalQuoteModule({ className }: TacticalQuoteModuleProps) {
       {/* Chamfered Tactical Container */}
       <div
         className={cn(
-          "relative flex flex-col justify-between p-2.5 sm:p-3",
+          "relative flex flex-col justify-between px-2.5 py-1.5 sm:px-3 sm:py-2",
           "bg-gradient-to-br from-[#111927]/95 via-[#0c1320]/95 to-[#070b13]/98",
           "border border-cyan-500/25 group-hover:border-cyan-400/50",
           "backdrop-blur-md shadow-lg shadow-black/40",
@@ -77,20 +77,20 @@ export function TacticalQuoteModule({ className }: TacticalQuoteModuleProps) {
         </div>
 
         {/* Header Telemetry Row */}
-        <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-white/[0.08]">
+        <div className="flex items-center justify-between gap-2 pb-1 border-b border-white/[0.08]">
           <div className="flex items-center gap-1.5">
-            <span className="relative flex size-2">
+            <span className="relative flex size-1.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
-              <span className="relative inline-flex size-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00e5ff]" />
+              <span className="relative inline-flex size-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#00e5ff]" />
             </span>
-            <span className="font-mono text-[9px] font-bold tracking-widest text-cyan-300/90 uppercase">
+            <span className="font-mono text-[8.5px] font-bold tracking-widest text-cyan-300/90 uppercase">
               [FOCUS // OVERRIDE]
             </span>
           </div>
 
           <div className="flex items-center gap-2">
             {"source" in currentQuote && (
-              <span className="font-mono text-[8.5px] text-amber-400/80 tracking-widest uppercase hidden sm:inline">
+              <span className="font-mono text-[8px] text-amber-400/80 tracking-widest uppercase hidden sm:inline">
                 {String((currentQuote as { source?: string }).source)}
               </span>
             )}
@@ -104,7 +104,7 @@ export function TacticalQuoteModule({ className }: TacticalQuoteModuleProps) {
               title="Next directive"
             >
               <RefreshCw
-                className={cn("size-3 transition-transform duration-500", isRotating && "rotate-180")}
+                className={cn("size-2.5 transition-transform duration-500", isRotating && "rotate-180")}
               />
             </button>
           </div>
@@ -113,14 +113,14 @@ export function TacticalQuoteModule({ className }: TacticalQuoteModuleProps) {
         {/* Directive Quote Body */}
         <div
           className={cn(
-            "pt-1.5 transition-all duration-200 min-h-[46px] flex flex-col justify-center",
+            "pt-1 transition-all duration-200 min-h-[38px] flex flex-col justify-center",
             fadeState === "fading" ? "opacity-0 translate-y-1" : "opacity-100 translate-y-0",
           )}
         >
-          <p className="line-clamp-2 font-display text-[11px] sm:text-[12px] leading-snug text-foreground/90 italic tracking-wide">
+          <p className="line-clamp-2 font-display text-[10px] sm:text-[11px] leading-tight text-foreground/90 italic tracking-wide">
             “{currentQuote.text}”
           </p>
-          <p className="font-mono text-[9px] sm:text-[9.5px] font-semibold text-right text-[#D4AF37] tracking-wider mt-1">
+          <p className="font-mono text-[8px] sm:text-[8.5px] font-semibold text-right text-[#D4AF37] tracking-wider mt-0.5">
             — {currentQuote.author.toUpperCase()}
           </p>
         </div>
