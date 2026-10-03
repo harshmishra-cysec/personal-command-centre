@@ -124,7 +124,9 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
             ? glitchActive
               ? "bg-[radial-gradient(ellipse_80%_60%_at_50%_45%,rgba(239,68,68,0.22),transparent_70%)]"
               : "bg-[radial-gradient(ellipse_80%_60%_at_50%_45%,rgba(220,38,38,0.12),transparent_70%)]"
-            : "bg-[radial-gradient(ellipse_80%_60%_at_50%_45%,rgba(0,229,255,0.18),transparent_70%)]",
+            : stage === 3
+              ? "bg-[radial-gradient(ellipse_80%_60%_at_50%_45%,rgba(0,229,255,0.18),transparent_70%)]"
+              : "bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,rgba(212,175,55,0.15),transparent_70%)]",
         )}
       />
 
@@ -157,11 +159,14 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
 
       {/* Main Center Container */}
       <div className="relative z-10 w-full max-w-2xl flex flex-col items-center justify-center text-center">
-        {/* Animated Lightning Bolt Arc */}
-        {(stage === 3 || stage === 4) && (
+        {/* Animated Lightning Bolt Arc (Stage 3 only) */}
+        {stage === 3 && (
           <div className="absolute -top-24 pointer-events-none opacity-40 animate-pulse">
             <Zap className="size-32 text-cyan-400 blur-sm drop-shadow-[0_0_25px_rgba(0,229,255,0.8)]" />
           </div>
+        )}
+        {stage === 4 && (
+          <div className="absolute -top-16 size-80 rounded-full bg-[#D4AF37]/10 blur-3xl pointer-events-none" />
         )}
 
         {/* STAGES 1 to 3: The Cyber Laptop Mockup */}
@@ -347,15 +352,16 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
               <span className="font-bold">VERSION 2.5 // MOVONE</span>
             </div>
 
-            {/* Movone Logo & App Brand Title */}
-            <div className="space-y-3 flex flex-col items-center">
-              <MovoneLogo size={88} glow={true} className="animate-pulse" />
-              <h1 className="font-mono text-3xl sm:text-5xl font-black uppercase tracking-wider text-foreground">
-                <span className="text-[#D4AF37] drop-shadow-[0_0_25px_rgba(212,175,55,0.6)]">
-                  MOVONE
-                </span>
-              </h1>
-              <p className="font-display text-base sm:text-lg text-foreground/90 font-semibold tracking-wide max-w-lg mx-auto italic">
+            {/* Movone Brand Logo */}
+            <div className="space-y-4 flex flex-col items-center">
+              <div className="relative inline-flex items-center justify-center py-2 px-4">
+                <img
+                  src="/movone-logo.svg"
+                  alt="MOVONE"
+                  className="h-14 sm:h-20 md:h-24 w-auto max-w-[85vw] object-contain drop-shadow-[0_0_30px_rgba(212,175,55,0.45)] transition-all"
+                />
+              </div>
+              <p className="font-display text-base sm:text-xl text-foreground/95 font-semibold tracking-wide max-w-lg mx-auto italic">
                 “One day or Day One. You decide.”
               </p>
               <p className="font-mono text-xs text-muted-foreground tracking-widest uppercase">
