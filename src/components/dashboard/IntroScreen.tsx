@@ -140,6 +140,31 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
         }}
       />
 
+      {/* Dynamic Cyber Chessboard Perspective Matrix (Stage 4) */}
+      {stage === 4 && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center z-0">
+          {/* Animated Perspective Chessboard Grid */}
+          <div
+            className="absolute w-[220vw] h-[160vh] opacity-20 pointer-events-none animate-pulse"
+            style={{
+              backgroundImage: `
+                linear-gradient(45deg, rgba(255, 255, 255, 0.12) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(255, 255, 255, 0.12) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.12) 75%),
+                linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.12) 75%)
+              `,
+              backgroundSize: "44px 44px",
+              backgroundPosition: "0 0, 0 22px, 22px -22px, -22px 0px",
+              transform: "perspective(600px) rotateX(46deg) translateY(-8%) scale(1.15)",
+              maskImage: "radial-gradient(ellipse 70% 60% at 50% 45%, black 20%, transparent 80%)",
+              WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 50% 45%, black 20%, transparent 80%)",
+            }}
+          />
+          {/* Ambient Chess Core Glow */}
+          <div className="absolute w-[560px] h-[340px] rounded-[60px] bg-gradient-to-r from-amber-500/15 via-white/10 to-cyan-500/15 blur-[90px] animate-pulse pointer-events-none" />
+        </div>
+      )}
+
       {/* Lightning Flash Overlay (Stage 3) */}
       {lightningFlash && (
         <div className="absolute inset-0 bg-cyan-200/30 backdrop-blur-[1px] animate-pulse z-40 pointer-events-none transition-opacity duration-300" />
@@ -352,21 +377,69 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
               <span className="font-bold">VERSION 2.5 // MOVONE</span>
             </div>
 
-            {/* Movone Brand Logo */}
-            <div className="space-y-4 flex flex-col items-center">
-              <div className="relative inline-flex items-center justify-center py-2 px-4">
-                <img
-                  src="/movone-logo.svg"
-                  alt="MOVONE"
-                  className="h-14 sm:h-20 md:h-24 w-auto max-w-[85vw] object-contain drop-shadow-[0_0_30px_rgba(212,175,55,0.45)] transition-all"
-                />
+            {/* Movone Brand Logo Presentation Chassis */}
+            <div className="space-y-4 flex flex-col items-center w-full">
+              {/* Tactical Chessboard HUD Chassis */}
+              <div className="relative group w-full max-w-lg mx-auto">
+                {/* Ambient Dual-Tone Glow Behind Chassis */}
+                <div className="absolute -inset-1.5 rounded-3xl bg-gradient-to-r from-[#D4AF37]/30 via-white/15 to-cyan-500/25 blur-xl opacity-80 group-hover:opacity-100 transition-opacity duration-700 animate-pulse pointer-events-none" />
+
+                {/* Main Chassis Frame */}
+                <div className="relative rounded-2xl border border-white/20 bg-gradient-to-b from-[#131B2A]/90 via-[#0C121E]/95 to-[#060911]/98 backdrop-blur-xl p-3 sm:p-5 shadow-2xl overflow-hidden">
+                  {/* Decorative Subtle Chessboard Pattern Watermark */}
+                  <div 
+                    className="absolute inset-0 pointer-events-none opacity-[0.07]"
+                    style={{
+                      backgroundImage: `
+                        linear-gradient(45deg, #fff 25%, transparent 25%),
+                        linear-gradient(-45deg, #fff 25%, transparent 25%),
+                        linear-gradient(45deg, transparent 75%, #fff 75%),
+                        linear-gradient(-45deg, transparent 75%, #fff 75%)
+                      `,
+                      backgroundSize: "16px 16px",
+                      backgroundPosition: "0 0, 0 8px, 8px -8px, -8px 0px",
+                    }}
+                  />
+
+                  {/* Corner HUD Tactical Brackets */}
+                  <span className="absolute top-2 left-2 size-3.5 border-t-2 border-l-2 border-[#D4AF37]/90 pointer-events-none" />
+                  <span className="absolute top-2 right-2 size-3.5 border-t-2 border-r-2 border-[#D4AF37]/90 pointer-events-none" />
+                  <span className="absolute bottom-2 left-2 size-3.5 border-b-2 border-l-2 border-[#D4AF37]/90 pointer-events-none" />
+                  <span className="absolute bottom-2 right-2 size-3.5 border-b-2 border-r-2 border-[#D4AF37]/90 pointer-events-none" />
+
+                  {/* Top Telemetry Header */}
+                  <div className="flex items-center justify-between pb-2 mb-2 px-1 border-b border-white/10 font-mono text-[9px] text-muted-foreground/80">
+                    <span className="inline-flex items-center gap-1.5 text-[#F5E296] font-semibold tracking-wider">
+                      <span className="size-1.5 rounded-full bg-[#D4AF37] animate-ping" />
+                      CHESS MATRIX // SYNCHRONIZED
+                    </span>
+                    <span className="tracking-widest text-[8.5px] uppercase text-white/50">
+                      RANK 1 // DAY ONE
+                    </span>
+                  </div>
+
+                  {/* The User's Logo (Unmodified, mounted seamlessly) */}
+                  <div className="relative rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/15 bg-black flex items-center justify-center p-0.5">
+                    <img
+                      src="/movone-logo.svg"
+                      alt="MOVONE"
+                      className="w-full h-auto max-h-24 sm:max-h-28 object-contain transition-transform duration-500 group-hover:scale-[1.01]"
+                    />
+                    {/* Animated Light Sweep Overlay */}
+                    <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                  </div>
+                </div>
               </div>
-              <p className="font-display text-base sm:text-xl text-foreground/95 font-semibold tracking-wide max-w-lg mx-auto italic">
-                “One day or Day One. You decide.”
-              </p>
-              <p className="font-mono text-xs text-muted-foreground tracking-widest uppercase">
-                MOVE + ONE // Tactical Command Deck
-              </p>
+
+              {/* Tagline & Subtitle */}
+              <div className="space-y-1 text-center pt-1">
+                <p className="font-display text-base sm:text-2xl font-bold tracking-wide italic text-transparent bg-clip-text bg-gradient-to-r from-white via-[#F5E296] to-white drop-shadow-[0_0_20px_rgba(212,175,55,0.35)]">
+                  “One day or Day One. You decide.”
+                </p>
+                <p className="font-mono text-xs text-muted-foreground tracking-[0.25em] uppercase">
+                  MOVE + ONE // Tactical Command Deck
+                </p>
+              </div>
             </div>
 
             {/* Feature Highlights Grid */}

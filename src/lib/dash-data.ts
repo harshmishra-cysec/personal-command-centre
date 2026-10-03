@@ -56,16 +56,49 @@ export const BOARD_META: Record<Pillar, { title: string; subtitle: string }> = {
 
 export const QUOTES = [
   {
-    text: "Dream is not that which you see while sleeping, it is something that does not let you sleep.",
+    text: "Excellence is a continuous process and not an accident.",
     author: "Dr. A.P.J. Abdul Kalam",
+    source: "DIRECTIVE 01",
   },
   {
     text: "You have power over your mind — not outside events. Realize this, and you will find strength.",
     author: "Marcus Aurelius",
+    source: "STOIC CODE",
   },
   {
-    text: "Excellence is a continuous process and not an accident.",
+    text: "The secret is to have courage in the opening, precision in the middle, and ruthlessness in the endgame.",
+    author: "Garry Kasparov",
+    source: "GRANDMASTER 2851",
+  },
+  {
+    text: "In the midst of chaos, there is also opportunity. Speed is the essence of war.",
+    author: "Sun Tzu",
+    source: "ART OF WAR",
+  },
+  {
+    text: "I don't believe in psychology. I believe in good moves.",
+    author: "Bobby Fischer",
+    source: "TACTICAL CHESS",
+  },
+  {
+    text: "Dream is not that which you see while sleeping, it is something that does not let you sleep.",
     author: "Dr. A.P.J. Abdul Kalam",
+    source: "VISIONARY PULSE",
+  },
+  {
+    text: "Luck is what happens when preparation meets opportunity.",
+    author: "Seneca",
+    source: "TACTICAL PRINCIPLE",
+  },
+  {
+    text: "Fixation is the way to death. Fluidity is the way to life.",
+    author: "Miyamoto Musashi",
+    source: "BOOK OF FIVE RINGS",
+  },
+  {
+    text: "Security is a process, not a product. Constant vigilance is the operational baseline.",
+    author: "Bruce Schneier",
+    source: "CYBERSEC DOCTRINE",
   },
 ];
 

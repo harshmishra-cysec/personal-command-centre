@@ -51,29 +51,29 @@
 :root {
   --radius: 0.5rem;
 
-  --background: #0b0f17;
-  --surface: #131b2a;
-  --surface-raised: #18223400;
-  --hairline: #ffffff1a;
+  --background: #06080e;
+  --surface: #0f1523;
+  --surface-raised: #141c2e;
+  --hairline: #ffffff18;
 
-  --foreground: #e6ecf5;
-  --card: #131b2a;
-  --card-foreground: #e6ecf5;
-  --popover: #131b2a;
-  --popover-foreground: #e6ecf5;
+  --foreground: #e6edf7;
+  --card: #0f1523;
+  --card-foreground: #e6edf7;
+  --popover: #0f1523;
+  --popover-foreground: #e6edf7;
 
   --primary: #00e5ff;
-  --primary-foreground: #04121a;
-  --secondary: #182233;
+  --primary-foreground: #031017;
+  --secondary: #162033;
   --secondary-foreground: #cbd6e6;
-  --muted: #182233;
-  --muted-foreground: #7b8aa3;
-  --accent: #1b2739;
-  --accent-foreground: #e6ecf5;
+  --muted: #162033;
+  --muted-foreground: #7586a1;
+  --accent: #19243a;
+  --accent-foreground: #e6edf7;
   --destructive: #ff4d5e;
   --destructive-foreground: #100406;
-  --border: #ffffff1a;
-  --input: #ffffff1a;
+  --border: #ffffff14;
+  --input: #ffffff14;
   --ring: #00e5ff;
 
   --cyber: #00e5ff;
@@ -88,10 +88,11 @@
 
   html {
     color-scheme: dark;
+    background-color: transparent;
   }
 
   body {
-    background-color: var(--color-background);
+    background-color: transparent;
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -124,19 +125,42 @@
 }
 
 @utility grid-backdrop {
+  background-color: #070a0f;
   background-image:
-    linear-gradient(to right, #ffffff08 1px, transparent 1px),
-    linear-gradient(to bottom, #ffffff08 1px, transparent 1px);
-  background-size: 56px 56px;
+    radial-gradient(ellipse 90% 50% at 50% -10%, rgba(0, 229, 255, 0.08), transparent 75%),
+    radial-gradient(ellipse 60% 40% at 15% 45%, rgba(14, 165, 233, 0.05), transparent 70%),
+    radial-gradient(ellipse 50% 35% at 85% 25%, rgba(212, 175, 55, 0.05), transparent 65%);
+}
+
+@utility atmospheric-backdrop {
+  background-color: #070a0f;
+  background-image:
+    radial-gradient(ellipse 90% 50% at 50% -10%, rgba(0, 229, 255, 0.09), transparent 75%),
+    radial-gradient(ellipse 60% 40% at 15% 45%, rgba(14, 165, 233, 0.06), transparent 70%),
+    radial-gradient(ellipse 50% 35% at 85% 25%, rgba(212, 175, 55, 0.05), transparent 65%);
 }
 
 @utility panel {
-  background-color: var(--surface);
-  border: 1px solid var(--hairline);
+  background: linear-gradient(180deg, rgba(16, 24, 38, 0.82) 0%, rgba(11, 16, 26, 0.94) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: var(--radius-lg);
   box-shadow:
-    0 1px 0 0 #ffffff0d inset,
-    0 18px 40px -28px #000000cc;
+    0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
+    0 12px 32px -16px rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+}
+
+@utility chamfer-box {
+  clip-path: polygon(
+    10px 0%,
+    calc(100% - 10px) 0%,
+    100% 10px,
+    100% calc(100% - 10px),
+    calc(100% - 10px) 100%,
+    10px 100%,
+    0% calc(100% - 10px),
+    0% 10px
+  );
 }
 
 @utility label-mono {

@@ -54,20 +54,25 @@ export function DesktopSidebar({
           title="Replay System Intro"
         >
           {collapsed ? (
-            <span className="grid size-8 shrink-0 place-items-center rounded-md border border-border/80 bg-background/80 group-hover:border-[#D4AF37]/50 transition-all">
+            <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border/80 bg-background/80 group-hover:border-[#D4AF37]/50 transition-all p-1">
               <img
-                src="/favicon.svg"
+                src="/favicon2.svg"
                 alt="MOVONE"
-                className="size-6 object-contain group-hover:scale-110 transition-transform"
+                className="size-7 object-contain group-hover:scale-110 transition-transform"
               />
             </span>
           ) : (
-            <div className="flex items-center px-1">
-              <img
-                src="/movone-logo.svg"
-                alt="MOVONE"
-                className="h-6 w-auto max-w-[180px] object-contain group-hover:scale-[1.02] transition-transform drop-shadow-[0_0_10px_rgba(212,175,55,0.3)]"
-              />
+            <div className="flex items-center gap-2.5 px-1">
+              <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border/80 bg-background/80 group-hover:border-[#D4AF37]/50 transition-all p-1 shadow-sm">
+                <img
+                  src="/favicon2.svg"
+                  alt="MOVONE"
+                  className="size-7 object-contain group-hover:scale-110 transition-transform"
+                />
+              </span>
+              <span className="truncate font-display text-[15px] font-black tracking-[0.25em] text-foreground group-hover:text-[#D4AF37] transition-colors">
+                MOVONE
+              </span>
             </div>
           )}
         </button>

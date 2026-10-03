@@ -134,8 +134,50 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      {/* Global Persistent Background Layer (Chess + Tactical Cyber) */}
+      <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden bg-[#06080e]">
+        {/* Tactical Lighting & Ambience: Diffused radial glow gradients */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(0,229,255,0.18),transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_45%_at_15%_35%,rgba(14,165,233,0.12),transparent_65%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_55%_40%_at_85%_25%,rgba(212,175,55,0.09),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_75%_45%_at_50%_100%,rgba(2,132,199,0.10),transparent_70%)]" />
+
+        {/* Subtle 3D Perspective Chessboard Grid Plane anchored towards horizon (8-12% opacity) */}
+        <div
+          className="absolute -top-[12%] left-1/2 -translate-x-1/2 w-[240vw] h-[170vh] pointer-events-none"
+          style={{
+            backgroundImage: `
+              linear-gradient(45deg, rgba(0, 229, 255, 0.10) 25%, transparent 25%),
+              linear-gradient(-45deg, rgba(0, 229, 255, 0.10) 25%, transparent 25%),
+              linear-gradient(45deg, transparent 75%, rgba(0, 229, 255, 0.10) 75%),
+              linear-gradient(-45deg, transparent 75%, rgba(0, 229, 255, 0.10) 75%),
+              linear-gradient(to right, rgba(0, 229, 255, 0.12) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(0, 229, 255, 0.12) 1px, transparent 1px)
+            `,
+            backgroundSize: "64px 64px, 64px 64px, 64px 64px, 64px 64px, 64px 64px, 64px 64px",
+            backgroundPosition: "0 0, 0 32px, 32px -32px, -32px 0px, 0 0, 0 0",
+            transform: "perspective(650px) rotateX(54deg) translateY(-8%) scale(1.15)",
+            maskImage:
+              "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 20%, rgba(0,0,0,0.65) 75%, rgba(0,0,0,0.2) 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 20%, rgba(0,0,0,0.65) 75%, rgba(0,0,0,0.2) 100%)",
+          }}
+        />
+
+        {/* Tactical Horizon Depth Lines */}
+        <div
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `linear-gradient(to bottom, transparent 60%, rgba(0, 229, 255, 0.10) 90%, rgba(0, 229, 255, 0.20) 100%)`,
+          }}
+        />
+      </div>
+
+      {/* Main content wrapper */}
+      <div className="relative z-0 bg-transparent min-h-screen">
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+      </div>
     </QueryClientProvider>
   );
 }
