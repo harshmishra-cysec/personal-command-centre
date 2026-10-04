@@ -354,10 +354,10 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
           {/* Monospace Typewriter Terminal Lines (2.80s - 4.20s) */}
           <div className="mt-5 flex flex-col items-center gap-1.5 font-mono text-[13px] sm:text-[16px] tracking-widest text-center select-none z-20">
             <div className="overflow-hidden whitespace-nowrap pcc-intro-type1-anim">
-              <span className="text-red-500 font-medium">&gt; Nf3 // BREACH INITIATED</span>
+              <span className="text-red-500 font-medium">&gt; BREACH INITIATED</span>
             </div>
             <div className="overflow-hidden whitespace-nowrap pcc-intro-type2-anim">
-              <span className="text-[#D4AF37] font-medium">&gt; MOVONE // ONLINE</span>
+              <span className="text-[#D4AF37] font-medium">&gt; MOVONE - ONLINE</span>
             </div>
           </div>
         </div>
@@ -426,7 +426,7 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
                   : "opacity-0 pcc-intro-reveal-eyebrow"
               }`}
             >
-              MOVE + ONE // TACTICAL COMMAND DECK
+              LETS MAKE A MOVE
             </span>
 
             {/* Tagline */}
@@ -437,9 +437,9 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
                   : "opacity-0 pcc-intro-reveal-tagline"
               }`}
             >
-              One day or <span className="text-[#D4AF37]">Day One</span>. You decide.
+              One day or <span className="text-[#D4AF37] whitespace-nowrap">Day One</span>. <br /> You decide.
             </h1>
-
+            
             {/* Description */}
             <p
               className={`font-sans font-normal leading-[1.6] text-[clamp(0.95rem,0.6rem+1vw,1.25rem)] text-white/70 max-w-[52ch] mt-2.5 sm:mt-3 ${
