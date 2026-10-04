@@ -126,7 +126,7 @@ export function TaskStopwatchModal({
           <div className="flex items-center gap-2">
             <Timer className="size-4 text-cyan-400" />
             <span className="font-mono text-xs font-bold uppercase tracking-wider text-foreground">
-              TACTICAL FOCUS STOPWATCH
+              FOCUS TIMER
             </span>
           </div>
 
@@ -135,7 +135,7 @@ export function TaskStopwatchModal({
               type="button"
               onClick={() => setIsMinimized(true)}
               className="grid size-7 place-items-center rounded-md border border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
-              title="Minimize to Floating Bar"
+              title="Minimize"
             >
               <Minimize2 className="size-3.5" />
             </button>
@@ -155,7 +155,7 @@ export function TaskStopwatchModal({
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-white/10 bg-white/5 font-mono text-[10px] text-cyan-400 uppercase font-semibold">
             <Zap className="size-3 text-cyan-400" />
             <span>
-              {task.tag} · {formatDuration(task.durationMinutes || 45)} TARGET
+              {task.tag} · {formatDuration(task.durationMinutes || 45)} GOAL
             </span>
           </div>
           <h3 className="font-mono text-base font-extrabold text-foreground tracking-tight line-clamp-2 pt-1">
@@ -178,9 +178,9 @@ export function TaskStopwatchModal({
           <div className="font-mono text-[11px] text-muted-foreground mt-2 uppercase tracking-widest">
             {mode === "countdown"
               ? remainingSeconds === 0
-                ? "TARGET REACHED // OVERTIME"
+                ? "GOAL REACHED · OVERTIME"
                 : "TIME REMAINING"
-              : "TOTAL TIME ELAPSED"}
+              : "TOTAL TIME"}
           </div>
 
           {/* Progress Bar */}
@@ -204,7 +204,7 @@ export function TaskStopwatchModal({
                 : "border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10",
             )}
           >
-            Countdown Mode
+            Countdown
           </button>
           <button
             type="button"
@@ -216,7 +216,7 @@ export function TaskStopwatchModal({
                 : "border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10",
             )}
           >
-            Elapsed Stopwatch
+            Stopwatch
           </button>
         </div>
 
@@ -226,7 +226,7 @@ export function TaskStopwatchModal({
             type="button"
             onClick={() => setSecondsElapsed(0)}
             className="grid size-11 place-items-center rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
-            title="Reset Timer"
+            title="Reset timer"
           >
             <RotateCcw className="size-4" />
           </button>
@@ -244,12 +244,12 @@ export function TaskStopwatchModal({
             {isRunning ? (
               <>
                 <Pause className="size-4" />
-                <span>PAUSE FOCUS</span>
+                <span>PAUSE</span>
               </>
             ) : (
               <>
                 <Play className="size-4 fill-current" />
-                <span>RESUME FOCUS</span>
+                <span>RESUME</span>
               </>
             )}
           </button>

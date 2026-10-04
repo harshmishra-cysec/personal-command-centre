@@ -36,7 +36,7 @@ export function DashHeader({
             type="button"
             onClick={onReplayIntro}
             className="flex flex-col items-start gap-0.5 text-left group cursor-pointer focus:outline-none shrink-0"
-            title="Replay Tactical Boot Sequence"
+            title="Replay intro"
           >
             {/* Direct /movone-logo.svg integration */}
             <img
@@ -45,31 +45,31 @@ export function DashHeader({
               className="h-7 sm:h-8 w-auto object-contain transition-transform group-hover:scale-[1.02]"
             />
 
-            {/* Operational Status Tag neatly aligned below */}
+            {/* Status tag neatly aligned below */}
             <div className="flex items-center gap-2">
               {syncStatus === "synced" ? (
                 <span
                   className="inline-flex items-center gap-1.5 font-mono text-[9px] sm:text-[9.5px] text-emerald-400 font-semibold tracking-wider"
-                  title="Realtime synced with Supabase cloud"
+                  title="Synced to cloud"
                 >
                   <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" />
-                  STATUS: OPERATIONAL
+                  SYNCED
                 </span>
               ) : syncStatus === "syncing" ? (
                 <span
                   className="inline-flex items-center gap-1.5 font-mono text-[9px] sm:text-[9.5px] text-cyan-400 font-semibold tracking-wider"
-                  title="Sync in-flight..."
+                  title="Syncing..."
                 >
                   <span className="size-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)] animate-ping" />
-                  SYNC IN-FLIGHT
+                  SYNCING...
                 </span>
               ) : (
                 <span
                   className="inline-flex items-center gap-1.5 font-mono text-[9px] sm:text-[9.5px] text-amber-400/90 tracking-wider"
-                  title="Local fallback active"
+                  title="Saved in your browser"
                 >
                   <span className="size-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
-                  LOCAL ONLY
+                  SAVED LOCALLY
                 </span>
               )}
             </div>

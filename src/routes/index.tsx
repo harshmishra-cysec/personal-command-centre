@@ -343,11 +343,11 @@ function Index() {
                 <div className="flex items-center gap-2.5">
                   <span className="size-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00e5ff] animate-pulse" />
                   <h2 className="font-mono text-xs font-bold tracking-widest text-cyan-300 uppercase">
-                    DAILY DASH // MISSION CONTROL
+                    Today
                   </h2>
                 </div>
                 <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider hidden sm:inline">
-                  TACTICAL ALLOCATION & OBJECTIVES
+                  Your tracks and goals
                 </span>
               </div>
 

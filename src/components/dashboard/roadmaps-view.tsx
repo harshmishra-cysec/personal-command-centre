@@ -202,10 +202,10 @@ export function RoadmapsView() {
           <span className="size-2 rounded-full bg-cyber animate-pulse" />
           <div>
             <h2 className="font-mono text-base sm:text-lg font-bold uppercase tracking-wider text-foreground">
-              Skill Paths & Progression Tree
+              Roadmaps
             </h2>
             <p className="font-mono text-xs text-muted-foreground mt-0.5">
-              TryHackMe-inspired sequential skill vectors, checkpoints, and tactical milestones.
+              Step-by-step milestones and checklists for each track.
             </p>
           </div>
         </div>
@@ -274,7 +274,7 @@ export function RoadmapsView() {
               />
             </div>
             <div className="flex items-center justify-between font-mono text-[10px] text-muted-foreground">
-              <span>{roadmaps.cyber?.nodes?.length || 0} NODES</span>
+              <span>{roadmaps.cyber?.nodes?.length || 0} MILESTONES</span>
               <span>
                 {roadmaps.cyber?.nodes?.filter((n) => n.status === "completed").length || 0} DONE
               </span>
@@ -332,7 +332,7 @@ export function RoadmapsView() {
               />
             </div>
             <div className="flex items-center justify-between font-mono text-[10px] text-muted-foreground">
-              <span>{roadmaps.academics?.nodes?.length || 0} NODES</span>
+              <span>{roadmaps.academics?.nodes?.length || 0} MILESTONES</span>
               <span>
                 {roadmaps.academics?.nodes?.filter((n) => n.status === "completed").length || 0}{" "}
                 DONE
@@ -391,7 +391,7 @@ export function RoadmapsView() {
               />
             </div>
             <div className="flex items-center justify-between font-mono text-[10px] text-muted-foreground">
-              <span>{roadmaps.aiml?.nodes?.length || 0} NODES</span>
+              <span>{roadmaps.aiml?.nodes?.length || 0} MILESTONES</span>
               <span>
                 {roadmaps.aiml?.nodes?.filter((n) => n.status === "completed").length || 0} DONE
               </span>
@@ -406,7 +406,7 @@ export function RoadmapsView() {
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
               <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                MISSION VECTOR // {activeTrack.code}
+                TRACK · {activeTrack.code}
               </span>
               <span
                 className={cn(
@@ -415,7 +415,7 @@ export function RoadmapsView() {
                 )}
               >
                 <Radio className="size-3 animate-pulse" />
-                ACTIVE PATH
+                ACTIVE TRACK
               </span>
             </div>
             <h3 className="font-mono text-xl sm:text-2xl font-bold tracking-tight text-foreground">
@@ -423,7 +423,7 @@ export function RoadmapsView() {
             </h3>
             <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">
               {activeTrack.subtitle ||
-                "Curated operational checkpoints and hands-on skill objectives."}
+                "Key milestones and checklists for your goals."}
             </p>
           </div>
 
@@ -444,7 +444,7 @@ export function RoadmapsView() {
               </div>
             </div>
             <div className="rounded-lg border border-white/10 bg-[#0B0F17] p-2.5 sm:p-3 min-w-[80px] text-center">
-              <div className="font-mono text-[9px] sm:text-[10px] text-cyber">IN FLIGHT</div>
+              <div className="font-mono text-[9px] sm:text-[10px] text-cyber">IN PROGRESS</div>
               <div className="font-mono text-base sm:text-lg font-bold text-foreground">
                 {activeCount}
               </div>
@@ -463,7 +463,7 @@ export function RoadmapsView() {
         {/* Dynamic Progression Bar */}
         <div className="mt-4 pt-4 border-t border-white/10 space-y-1">
           <div className="flex items-center justify-between font-mono text-[10px] text-muted-foreground">
-            <span>TACTICAL PATH COMPLETION</span>
+            <span>TRACK PROGRESS</span>
             <span className={cn("font-bold", currentTheme.text)}>{trackProgress}%</span>
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-[#0B0F17]">
@@ -475,15 +475,15 @@ export function RoadmapsView() {
         </div>
       </div>
 
-      {/* THM Continuous Progression Path Tree */}
+      {/* Continuous Progression Path Tree */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
             <Layers className="size-4 text-primary" />
-            <span>PROGRESSION PIPELINE ({activeTrack.nodes.length} WAYPOINTS)</span>
+            <span>PROGRESSION ({activeTrack.nodes.length} MILESTONES)</span>
           </div>
           <span className="font-mono text-[10px] text-muted-foreground">
-            CLICK ANY NODE TO INSPECT / EDIT SUB-TASKS
+            CLICK A MILESTONE TO VIEW DETAILS
           </span>
         </div>
 
@@ -495,11 +495,10 @@ export function RoadmapsView() {
             </div>
             <div className="space-y-1">
               <h4 className="font-mono text-sm font-bold uppercase text-foreground">
-                NO ACTIVE MILESTONES // INITIALIZE NEW PATH (+)
+                NO MILESTONES YET
               </h4>
               <p className="font-mono text-xs text-muted-foreground max-w-md mx-auto">
-                All milestones in this track vector have been cleared. Build your custom progression
-                roadmap from scratch.
+                Start building your roadmap by adding your first milestone.
               </p>
             </div>
             <div className="flex items-center justify-center gap-3 pt-2">
@@ -541,7 +540,7 @@ export function RoadmapsView() {
                   type="button"
                   onClick={() => setAddModalOpen(true)}
                   className="grid size-9 place-items-center rounded-xl border border-dashed border-white/20 bg-[#0B0F17] text-muted-foreground hover:border-primary hover:text-primary transition-all hover:scale-105"
-                  title="Add Next Milestone"
+                  title="Add next milestone"
                 >
                   <Plus className="size-4" />
                 </button>
@@ -554,10 +553,10 @@ export function RoadmapsView() {
               >
                 <span className="flex items-center gap-2">
                   <PlusCircle className="size-4 text-primary" />
-                  <span>+ ADD NEW STRATEGIC MILESTONE TO THIS PATH</span>
+                  <span>+ ADD MILESTONE TO THIS TRACK</span>
                 </span>
                 <span className="text-[10px] text-primary/80 font-bold uppercase">
-                  INITIALIZE // NODE {String(activeTrack.nodes.length + 1).padStart(2, "0")}
+                  MILESTONE {String(activeTrack.nodes.length + 1).padStart(2, "0")}
                 </span>
               </button>
             </div>

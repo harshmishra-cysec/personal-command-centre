@@ -31,7 +31,7 @@ export function TacticalChronometerDock({ className }: TacticalChronometerDockPr
 
   return (
     <aside
-      aria-label="Tactical Chronometer Dock"
+      aria-label="Clock"
       className={cn(
         "fixed left-3 sm:left-4 top-1/2 -translate-y-1/2 z-40 hidden md:flex flex-col items-center",
         "bg-[#0c121e]/85 backdrop-blur-md border border-cyan-500/20 shadow-[0_0_20px_rgba(0,0,0,0.6)] rounded-2xl",
@@ -68,10 +68,10 @@ export function TacticalChronometerDock({ className }: TacticalChronometerDockPr
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-cyan-500/30 bg-[#0c1320]/95 backdrop-blur-md shadow-xl shadow-black/80 whitespace-nowrap">
             <span className="size-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#00e5ff]" />
             <span className="font-mono text-[11px] font-semibold text-cyan-200 tracking-wider">
-              TACTICAL CHRONOMETER
+              CURRENT TIME
             </span>
             <span className="font-mono text-[9px] text-[#D4AF37] tracking-wider ml-1 uppercase">
-              [SYS // CLOCK]
+              LIVE
             </span>
           </div>
         </div>

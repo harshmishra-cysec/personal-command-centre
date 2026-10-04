@@ -9,22 +9,22 @@ export const TIMINGS = {
   KNIGHT_APPEAR_START_MS: 500,
   KNIGHT_APPEAR_DURATION_MS: 700,
   KNIGHT_MOVE_START_MS: 1200,
-  KNIGHT_MOVE_DURATION_MS: 1600,
-  KNIGHT_LANDING_MS: 2800,
-  TYPEWRITER_1_START_MS: 2800,
-  TYPEWRITER_1_DURATION_MS: 650,
-  TYPEWRITER_2_START_MS: 3450,
-  TYPEWRITER_2_DURATION_MS: 550,
-  TERMINAL_HOLD_END_MS: 4200,
-  BOARD_FADE_START_MS: 4200,
-  REVEAL_START_MS: 4200,
-  REVEAL_HERO_MS: 4200,
-  REVEAL_LOGO_MS: 4500,
-  REVEAL_EYEBROW_MS: 4700,
-  REVEAL_TAGLINE_MS: 4850,
-  REVEAL_DESC_MS: 5050,
-  REVEAL_CHIPS_MS: 5250,
-  LOGIN_BTN_APPEAR_MS: 5400,
+  KNIGHT_MOVE_DURATION_MS: 1400,
+  KNIGHT_LANDING_MS: 2600,
+  TYPEWRITER_1_START_MS: 2600,
+  TYPEWRITER_1_DURATION_MS: 450,
+  TYPEWRITER_2_START_MS: 3080,
+  TYPEWRITER_2_DURATION_MS: 400,
+  TERMINAL_HOLD_END_MS: 3600,
+  BOARD_FADE_START_MS: 3600,
+  REVEAL_START_MS: 3600,
+  REVEAL_HERO_MS: 3600,
+  REVEAL_LOGO_MS: 3750,
+  REVEAL_EYEBROW_MS: 3850,
+  REVEAL_TAGLINE_MS: 3950,
+  REVEAL_DESC_MS: 4050,
+  REVEAL_CHIPS_MS: 4150,
+  LOGIN_BTN_APPEAR_MS: 4200,
   EXIT_DURATION_MS: 500,
 } as const;
 
@@ -363,12 +363,12 @@ export function IntroScreen({ onComplete }: IntroScreenProps) {
         </div>
       )}
 
-      {/* PHASE 2: HERO REVEAL (Visible ONLY when screen === 'hero') */}
+      {/* PHASE 2: HERO REVEAL (Mounted at t=0, revealed 3.60s - 4.20s, hidden on screen === 'login') */}
       <div
         className={`absolute inset-0 flex items-center justify-center p-4 sm:p-6 transition-opacity duration-300 ${
-          screen === "hero"
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+          screen === "login"
+            ? "opacity-0 pointer-events-none"
+            : "opacity-100 pointer-events-auto"
         }`}
       >
         <div className="w-full max-w-[1100px] flex flex-col min-[900px]:grid min-[900px]:grid-cols-2 items-center gap-4 sm:gap-6 min-[900px]:gap-12 pointer-events-auto">

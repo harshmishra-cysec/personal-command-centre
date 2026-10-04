@@ -49,26 +49,26 @@ export function formatDuration(minutes: number): string {
 }
 
 export const BOARD_META: Record<Pillar, { title: string; subtitle: string }> = {
-  cyber: { title: "Cybersecurity Track", subtitle: "Offensive ops · labs · certs" },
-  gold: { title: "Academics & Labs", subtitle: "Coursework · deadlines · attendance" },
-  emerald: { title: "AIML & Extra", subtitle: "Builds · research · side quests" },
+  cyber: { title: "Cybersecurity Track", subtitle: "Labs, certs, and practice" },
+  gold: { title: "Academics & Labs", subtitle: "Classes, assignments, and exams" },
+  emerald: { title: "AIML & Extra", subtitle: "Side projects, research, and builds" },
 };
 
 export const QUOTES = [
   {
     text: "Excellence is a continuous process and not an accident.",
     author: "Dr. A.P.J. Abdul Kalam",
-    source: "DIRECTIVE 01",
+    source: "INSPIRATION",
   },
   {
     text: "You have power over your mind — not outside events. Realize this, and you will find strength.",
     author: "Marcus Aurelius",
-    source: "STOIC CODE",
+    source: "MEDITATIONS",
   },
   {
     text: "The secret is to have courage in the opening, precision in the middle, and ruthlessness in the endgame.",
     author: "Garry Kasparov",
-    source: "GRANDMASTER 2851",
+    source: "GRANDMASTER",
   },
   {
     text: "In the midst of chaos, there is also opportunity. Speed is the essence of war.",
@@ -78,27 +78,27 @@ export const QUOTES = [
   {
     text: "I don't believe in psychology. I believe in good moves.",
     author: "Bobby Fischer",
-    source: "TACTICAL CHESS",
+    source: "CHESS",
   },
   {
     text: "Dream is not that which you see while sleeping, it is something that does not let you sleep.",
     author: "Dr. A.P.J. Abdul Kalam",
-    source: "VISIONARY PULSE",
+    source: "VISION",
   },
   {
     text: "Luck is what happens when preparation meets opportunity.",
     author: "Seneca",
-    source: "TACTICAL PRINCIPLE",
+    source: "LETTERS",
   },
   {
     text: "Fixation is the way to death. Fluidity is the way to life.",
     author: "Miyamoto Musashi",
-    source: "BOOK OF FIVE RINGS",
+    source: "FIVE RINGS",
   },
   {
     text: "Security is a process, not a product. Constant vigilance is the operational baseline.",
     author: "Bruce Schneier",
-    source: "CYBERSEC DOCTRINE",
+    source: "SECURITY",
   },
 ];
 

@@ -15,7 +15,7 @@ export type TabView = "today" | "roadmaps" | "reality" | "stats";
 export const NAV_ITEMS = [
   { id: "today", label: "Today", icon: CalendarCheck },
   { id: "roadmaps", label: "Roadmaps", icon: Map },
-  { id: "reality", label: "Re-Check", icon: ScanEye },
+  { id: "reality", label: "Refocus", icon: ScanEye },
   { id: "stats", label: "Stats", icon: BarChart3 },
 ] as const;
 
@@ -51,7 +51,7 @@ export function DesktopSidebar({
           type="button"
           onClick={onReplayIntro}
           className="flex w-full items-center gap-2.5 rounded-md p-1 text-left group cursor-pointer hover:text-primary transition-colors focus:outline-none"
-          title="Replay System Intro"
+          title="Replay intro"
         >
           {collapsed ? (
             <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border/80 bg-background/80 group-hover:border-[#D4AF37]/50 transition-all p-1">

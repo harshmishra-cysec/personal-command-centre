@@ -49,31 +49,31 @@ export const WASTE_COSTS: WasteCostOption[] = [
   {
     durationMinutes: 15,
     label: "15 Minutes",
-    costDescription: "45-60 micro-reels consumed with zero retained knowledge or synaptic value.",
-    alternateGain: "1 TryHackMe room breakdown OR reading 2 technical RFC pages.",
+    costDescription: "40 to 50 short videos watched with nothing useful remembered.",
+    alternateGain: "Work through a lab room or read a couple pages of documentation.",
   },
   {
     durationMinutes: 30,
     label: "30 Minutes",
     costDescription:
-      "Elevated brain fog, shattered baseline attention span, and 30m delayed bedtime.",
-    alternateGain: "1 complete LeetCode Medium derivation OR 5 CTF challenge recon sweeps.",
+      "Brain fog, lost attention span, and going to bed half an hour late.",
+    alternateGain: "Solve a medium coding problem or practice hands-on challenges.",
   },
   {
     durationMinutes: 60,
     label: "1 Hour",
     costDescription:
-      "Severe dopamine depletion, heightened anxiety, and complete momentum collapse.",
+      "Low energy, extra stress, and lost momentum for the rest of the evening.",
     alternateGain:
-      "Writing an entire custom Python exploit script OR studying 1 full OS textbook chapter.",
+      "Write a small automation script or study a textbook chapter.",
   },
   {
     durationMinutes: 120,
     label: "2 Hours",
     costDescription:
-      "Loss of an entire operational evening. Regret, guilt, and reduced sleep quality.",
+      "An entire evening lost, plus regret, guilt, and poor sleep.",
     alternateGain:
-      "Full end-to-end Active Directory lab setup OR training a baseline transformer model.",
+      "Set up a complete home lab or train a machine learning model.",
   },
 ];
 
@@ -88,31 +88,31 @@ export interface MicroAction {
 export const DEFAULT_MICRO_ACTIONS: MicroAction[] = [
   {
     id: "act-1",
-    title: "Read 3 pages of technical documentation / notes",
+    title: "Read 3 pages of notes or documentation",
     category: "acad",
     estimatedMinutes: 5,
-    directive: "Open your active OS/DSA notes or RFC docs. Read 3 pages with laser focus.",
+    directive: "Open your current class or subject notes. Read 3 pages with full attention.",
   },
   {
     id: "act-2",
-    title: "Solve 1 basic bug or write 1 script snippet",
+    title: "Solve 1 small bug or write a short script",
     category: "cyber",
     estimatedMinutes: 5,
-    directive: "Write a 15-line Bash/Python automation or analyze 1 Wireshark filter syntax.",
+    directive: "Write a quick 10-line script or test a command in your terminal.",
   },
   {
     id: "act-3",
-    title: "Review 1 CySec tool syntax / CVE exploit writeup",
+    title: "Review 1 security tool or writeup",
     category: "cyber",
     estimatedMinutes: 5,
-    directive: "Analyze 1 recent NVD CVE entry or review Mimikatz / BloodHound flags.",
+    directive: "Look over a recent vulnerability writeup or review security commands.",
   },
   {
     id: "act-4",
-    title: "Derive 1 mathematical or tensor equation step",
+    title: "Work through 1 equation or concept on paper",
     category: "aiml",
     estimatedMinutes: 5,
-    directive: "Write down the self-attention formula or autograd chain-rule step on paper.",
+    directive: "Write out a formula or sketch an architecture concept step on paper.",
   },
 ];
 

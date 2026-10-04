@@ -393,63 +393,63 @@
 }
 
 @utility pcc-intro-knight-move-anim {
-  animation: pcc-intro-knight-move 1.6s cubic-bezier(0.4, 0, 0.2, 1) 1.2s both;
+  animation: pcc-intro-knight-move 1.4s cubic-bezier(0.4, 0, 0.2, 1) 1.2s both;
 }
 
 @utility pcc-intro-trail-v-anim {
-  animation: pcc-intro-trail-v 0.7s cubic-bezier(0.4, 0, 0.2, 1) 1.45s both;
+  animation: pcc-intro-trail-v 0.6s cubic-bezier(0.4, 0, 0.2, 1) 1.45s both;
 }
 
 @utility pcc-intro-trail-h-anim {
-  animation: pcc-intro-trail-h 0.45s cubic-bezier(0.4, 0, 0.2, 1) 2.15s both;
+  animation: pcc-intro-trail-h 0.35s cubic-bezier(0.4, 0, 0.2, 1) 2.05s both;
 }
 
 @utility pcc-intro-landing-pulse-anim {
-  animation: pcc-intro-landing-pulse 0.6s ease-out 2.8s both;
+  animation: pcc-intro-landing-pulse 0.5s ease-out 2.6s both;
 }
 
 @utility pcc-intro-type1-anim {
-  animation: pcc-intro-type1 0.65s steps(25, end) 2.8s both;
+  animation: pcc-intro-type1 0.45s steps(25, end) 2.6s both;
 }
 
 @utility pcc-intro-type2-anim {
-  animation: pcc-intro-type2 0.55s steps(18, end) 3.45s both;
+  animation: pcc-intro-type2 0.4s steps(18, end) 3.08s both;
 }
 
 @utility pcc-intro-phase1-exit {
-  animation: pcc-intro-phase1-fadeout 0.3s ease-out 4.2s forwards;
+  animation: pcc-intro-phase1-fadeout 0.25s ease-out 3.6s forwards;
 }
 
 @utility pcc-intro-backdrop-fade {
-  animation: pcc-intro-reduced-fade 0.6s ease-out 4.2s both;
+  animation: pcc-intro-reduced-fade 0.4s ease-out 3.6s both;
 }
 
 @utility pcc-intro-reveal-hero {
-  animation: pcc-intro-reveal-item 0.5s cubic-bezier(0.16, 1, 0.3, 1) 4.2s both;
+  animation: pcc-intro-reveal-item 0.4s cubic-bezier(0.16, 1, 0.3, 1) 3.6s both;
 }
 
 @utility pcc-intro-reveal-logo {
-  animation: pcc-intro-reveal-item 0.5s cubic-bezier(0.16, 1, 0.3, 1) 4.5s both;
+  animation: pcc-intro-reveal-item 0.35s cubic-bezier(0.16, 1, 0.3, 1) 3.75s both;
 }
 
 @utility pcc-intro-reveal-eyebrow {
-  animation: pcc-intro-reveal-item 0.5s cubic-bezier(0.16, 1, 0.3, 1) 4.7s both;
+  animation: pcc-intro-reveal-item 0.35s cubic-bezier(0.16, 1, 0.3, 1) 3.85s both;
 }
 
 @utility pcc-intro-reveal-tagline {
-  animation: pcc-intro-reveal-item 0.5s cubic-bezier(0.16, 1, 0.3, 1) 4.85s both;
+  animation: pcc-intro-reveal-item 0.35s cubic-bezier(0.16, 1, 0.3, 1) 3.95s both;
 }
 
 @utility pcc-intro-reveal-desc {
-  animation: pcc-intro-reveal-item 0.5s cubic-bezier(0.16, 1, 0.3, 1) 5.05s both;
+  animation: pcc-intro-reveal-item 0.35s cubic-bezier(0.16, 1, 0.3, 1) 4.05s both;
 }
 
 @utility pcc-intro-reveal-chips {
-  animation: pcc-intro-reveal-item 0.5s cubic-bezier(0.16, 1, 0.3, 1) 5.25s both;
+  animation: pcc-intro-reveal-item 0.35s cubic-bezier(0.16, 1, 0.3, 1) 4.15s both;
 }
 
 @utility pcc-intro-login-btn-in {
-  animation: pcc-intro-reduced-fade 0.4s ease-out 5.4s both;
+  animation: pcc-intro-reduced-fade 0.35s ease-out 4.2s both;
 }
 
 @utility pcc-intro-glow-anim {

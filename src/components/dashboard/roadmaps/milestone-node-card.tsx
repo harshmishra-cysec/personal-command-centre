@@ -248,7 +248,7 @@ export function MilestoneNodeCard({
               className="hidden sm:inline-flex items-center gap-1 font-mono text-[11px] text-muted-foreground hover:text-primary transition-colors py-0.5 px-1.5 rounded hover:bg-white/5"
             >
               <Edit3 className="size-3 text-primary" />
-              <span>DETAILS</span>
+              <span>Details</span>
               <ChevronRight className="size-3" />
             </button>
           </div>
@@ -274,7 +274,7 @@ export function MilestoneNodeCard({
             </div>
             <span className="font-mono text-[10px] text-muted-foreground font-semibold flex-shrink-0">
               {totalSubTasks > 0
-                ? `${completedSubTasks}/${totalSubTasks} subtasks`
+                ? `${completedSubTasks}/${totalSubTasks} tasks`
                 : `${progress}%`}
             </span>
           </div>

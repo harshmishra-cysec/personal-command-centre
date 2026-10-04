@@ -39,7 +39,7 @@ export function TacticalQuoteModule({ className }: TacticalQuoteModuleProps) {
   return (
     <div
       onClick={cycleQuote}
-      title="Click to cycle tactical directive"
+      title="Click to view another quote"
       className={cn(
         "group relative select-none cursor-pointer overflow-hidden transition-all duration-300",
         "w-full max-w-[270px] sm:max-w-[310px] xl:max-w-[340px]",
@@ -84,7 +84,7 @@ export function TacticalQuoteModule({ className }: TacticalQuoteModuleProps) {
               <span className="relative inline-flex size-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#00e5ff]" />
             </span>
             <span className="font-mono text-[8.5px] font-bold tracking-widest text-cyan-300/90 uppercase">
-              [FOCUS // OVERRIDE]
+              DAILY REMINDER
             </span>
           </div>
 
@@ -101,7 +101,7 @@ export function TacticalQuoteModule({ className }: TacticalQuoteModuleProps) {
                 cycleQuote();
               }}
               className="p-0.5 rounded text-muted-foreground hover:text-cyan-300 hover:bg-white/5 transition-colors focus:outline-none"
-              title="Next directive"
+              title="Next quote"
             >
               <RefreshCw
                 className={cn("size-2.5 transition-transform duration-500", isRotating && "rotate-180")}

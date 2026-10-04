@@ -245,7 +245,7 @@ export function MilestoneDetailModal({
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
             <div className="flex items-center gap-2">
               <span className="font-mono text-xs font-bold text-muted-foreground">
-                NODE // {sequence}
+                MILESTONE · {sequence}
               </span>
               <span
                 className={cn(
@@ -253,7 +253,7 @@ export function MilestoneDetailModal({
                   styles.badge,
                 )}
               >
-                {node.trackId.toUpperCase()} PATH
+                {node.trackId.toUpperCase()} TRACK
               </span>
             </div>
 
@@ -309,7 +309,7 @@ export function MilestoneDetailModal({
                     {title}
                   </DialogTitle>
                   <DialogDescription className="mt-1 text-xs text-muted-foreground">
-                    TryHackMe skill-tree node parameters and operational checklist.
+                    Milestone details and checklist.
                   </DialogDescription>
                 </div>
                 <button
@@ -318,7 +318,7 @@ export function MilestoneDetailModal({
                   className="flex items-center gap-1 rounded border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-[11px] text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
                 >
                   <FileEdit className="size-3 text-primary" />
-                  <span>EDIT DETAILS</span>
+                  <span>Edit details</span>
                 </button>
               </div>
             ) : (
@@ -326,10 +326,10 @@ export function MilestoneDetailModal({
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-xs font-bold text-primary flex items-center gap-1.5">
                     <FileEdit className="size-3.5" />
-                    EDIT MILESTONE SPECIFICATION
+                    Edit milestone details
                   </span>
                   <span className="font-mono text-[10px] text-muted-foreground">
-                    CUSTOM PARAMETERS
+                    Settings
                   </span>
                 </div>
 
@@ -416,7 +416,7 @@ export function MilestoneDetailModal({
             <div className="rounded-lg border border-white/10 bg-[#0B0F17]/80 p-4">
               <h4 className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5 flex items-center gap-1.5">
                 <Sparkles className="size-3 text-primary" />
-                Strategic Objective
+                Overview
               </h4>
               <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed">{description}</p>
 
@@ -448,10 +448,10 @@ export function MilestoneDetailModal({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="font-mono text-xs font-bold uppercase tracking-wider text-foreground">
-                  Operational Checklist
+                  Checklist
                 </span>
                 <span className="rounded bg-white/10 px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
-                  {completedSubTasksCount} / {subTasks.length} COMPLETED
+                  {completedSubTasksCount} of {subTasks.length} completed
                 </span>
               </div>
               <span className={cn("font-mono text-xs font-bold", styles.text)}>{progress}%</span>
@@ -469,7 +469,7 @@ export function MilestoneDetailModal({
             <div className="space-y-2 pt-1">
               {subTasks.length === 0 ? (
                 <div className="py-4 text-center font-mono text-xs text-muted-foreground">
-                  No sub-tasks logged yet. Add checklist items below to track progress.
+                  No checklist items yet. Add one below to track progress.
                 </div>
               ) : (
                 subTasks.map((subTask) => (
@@ -521,7 +521,7 @@ export function MilestoneDetailModal({
                 type="text"
                 value={newSubTaskTitle}
                 onChange={(e) => setNewSubTaskTitle(e.target.value)}
-                placeholder="Add sub-task objective or laboratory challenge..."
+                placeholder="Add a checklist item or task..."
                 className="flex-1 rounded-md border border-white/15 bg-[#131B2A] px-3 py-1.5 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
               />
               <button
@@ -545,13 +545,13 @@ export function MilestoneDetailModal({
               className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 hover:underline font-mono"
             >
               <Trash2 className="size-3.5" />
-              DELETE NODE
+              Delete milestone
             </button>
           ) : (
             <div className="flex items-center gap-2 font-mono text-xs">
               <span className="text-red-400 flex items-center gap-1">
                 <AlertTriangle className="size-3.5" />
-                Confirm delete?
+                Are you sure?
               </span>
               <button
                 type="button"

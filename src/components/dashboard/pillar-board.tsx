@@ -93,7 +93,7 @@ export function PillarBoard({
           )}
         >
           <Plus className="size-3.5" />
-          NEW OBJECTIVE
+          NEW TASK
         </button>
       </div>
 
@@ -159,7 +159,7 @@ export function PillarBoard({
                           "inline-flex items-center gap-1 rounded border border-white/10 bg-[#0B0F17] px-1.5 py-0.5 font-mono text-[10px] text-cyan-400 font-semibold tabular-nums",
                           task.done && "line-through opacity-70",
                         )}
-                        title="Allocated duration"
+                        title="Estimated focus time"
                       >
                         <Clock className="size-2.5" />
                         {durationStr}
@@ -173,7 +173,7 @@ export function PillarBoard({
                             onStartTimer(board.id, task);
                           }}
                           className="grid size-6 place-items-center rounded border border-cyan-400/40 bg-cyan-950/40 text-cyan-400 hover:bg-cyan-400 hover:text-black hover:shadow-[0_0_12px_rgba(0,229,255,0.6)] transition-all cursor-pointer"
-                          title="Start Focus Stopwatch"
+                          title="Start timer"
                         >
                           <Play className="size-3 fill-current ml-0.5" />
                         </button>
@@ -196,7 +196,7 @@ export function PillarBoard({
                     {task.checklist_item_id && (
                       <span
                         className="inline-flex items-center gap-1 rounded-[3px] border border-cyan-400/40 bg-cyan-950/40 px-1.5 py-0.5 font-mono text-[9px] tracking-[0.1em] text-cyan-300"
-                        title="Linked to Roadmap Checklist"
+                        title="Linked to roadmap checklist"
                       >
                         <GitCommit className="size-2.5 text-cyan-400" />
                         ROADMAP

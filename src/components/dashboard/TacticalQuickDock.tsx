@@ -12,7 +12,7 @@ const QUICK_LINKS: QuickLinkItem[] = [
   {
     id: "linkedin",
     name: "LinkedIn",
-    tag: "NET // OPS",
+    tag: "Network",
     url: "https://www.linkedin.com/",
     icon: ({ className }) => (
       <svg className={cn("size-4.5 sm:size-5", className)} viewBox="0 0 24 24" fill="currentColor">
@@ -23,7 +23,7 @@ const QUICK_LINKS: QuickLinkItem[] = [
   {
     id: "tryhackme",
     name: "TryHackMe",
-    tag: "RED // LABS",
+    tag: "Labs",
     url: "https://tryhackme.com/",
     icon: ({ className }) => (
       <svg className={cn("size-4.5 sm:size-5", className)} viewBox="0 0 24 24" fill="currentColor">
@@ -34,7 +34,7 @@ const QUICK_LINKS: QuickLinkItem[] = [
   {
     id: "linuxjourney",
     name: "Linux Journey",
-    tag: "SYS // CORE",
+    tag: "Linux",
     url: "https://linuxjourney.com/",
     icon: ({ className }) => (
       <svg className={cn("size-4.5 sm:size-5", className)} viewBox="0 0 24 24" fill="currentColor">
@@ -45,7 +45,7 @@ const QUICK_LINKS: QuickLinkItem[] = [
   {
     id: "overthewire",
     name: "OverTheWire Bandit",
-    tag: "WAR // GAMES",
+    tag: "Practice",
     url: "https://overthewire.org/wargames/bandit/",
     icon: ({ className }) => (
       <svg className={cn("size-4.5 sm:size-5", className)} viewBox="0 0 24 24" fill="currentColor">
@@ -56,7 +56,7 @@ const QUICK_LINKS: QuickLinkItem[] = [
   {
     id: "youtube",
     name: "YouTube",
-    tag: "MEDIA // STREAM",
+    tag: "Videos",
     url: "https://www.youtube.com/",
     icon: ({ className }) => (
       <svg className={cn("size-4.5 sm:size-5", className)} viewBox="0 0 24 24" fill="currentColor">
@@ -67,7 +67,7 @@ const QUICK_LINKS: QuickLinkItem[] = [
   {
     id: "claude",
     name: "Claude",
-    tag: "AI // ANTHROPIC",
+    tag: "AI",
     url: "https://claude.ai/",
     icon: ({ className }) => (
       <svg className={cn("size-4.5 sm:size-5", className)} viewBox="0 0 24 24" fill="currentColor">
@@ -78,7 +78,7 @@ const QUICK_LINKS: QuickLinkItem[] = [
   {
     id: "gemini",
     name: "Gemini",
-    tag: "AI // GOOGLE",
+    tag: "AI",
     url: "https://gemini.google.com/",
     icon: ({ className }) => (
       <svg className={cn("size-4.5 sm:size-5", className)} viewBox="0 0 24 24" fill="currentColor">
@@ -91,7 +91,7 @@ const QUICK_LINKS: QuickLinkItem[] = [
 export function TacticalQuickDock() {
   return (
     <aside
-      aria-label="Tactical Quick Links Dock"
+      aria-label="Quick links"
       className={cn(
         "fixed right-3 sm:right-4 top-1/2 -translate-y-1/2 z-40 hidden md:flex flex-col items-center",
         "bg-[#0c121e]/85 backdrop-blur-md border border-cyan-500/20 shadow-[0_0_20px_rgba(0,0,0,0.6)] rounded-2xl py-3 px-1.5 sm:px-2",

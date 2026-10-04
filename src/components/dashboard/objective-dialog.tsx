@@ -235,10 +235,10 @@ export function ObjectiveDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto border-border bg-surface/95 backdrop-blur sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-display text-sm tracking-[0.18em] text-foreground">
-            {mode === "create" ? "NEW OBJECTIVE" : "EDIT OBJECTIVE"}
+            {mode === "create" ? "NEW TASK" : "EDIT TASK"}
           </DialogTitle>
           <DialogDescription className="label-mono normal-case tracking-normal">
-            Log mission parameters and allocated duration.
+            Set your task details and focus time.
           </DialogDescription>
         </DialogHeader>
 
@@ -270,7 +270,7 @@ export function ObjectiveDialog({
             <div className="flex items-center justify-between">
               <span className="label-mono flex items-center gap-1.5 text-foreground font-semibold">
                 <GitCommit className="size-3.5 text-primary" />
-                LINK TO ROADMAP MILESTONE / CHECKLIST
+                LINK TO ROADMAP MILESTONE OR CHECKLIST
               </span>
               <span className="font-mono text-[10px] text-muted-foreground tracking-wider uppercase">
                 (Optional)
@@ -283,7 +283,7 @@ export function ObjectiveDialog({
                 htmlFor="roadmap-node-select"
                 className="font-mono text-[10px] text-muted-foreground tracking-wider block"
               >
-                1. SELECT MILESTONE NODE
+                1. SELECT MILESTONE
               </label>
               <div className="relative">
                 <select
@@ -295,7 +295,7 @@ export function ObjectiveDialog({
                     "font-mono text-xs pr-8 bg-[#0D131F] border-border/70 text-foreground cursor-pointer appearance-none",
                   )}
                 >
-                  <option value="">-- No Roadmap Milestone Linked --</option>
+                  <option value="">-- No milestone linked --</option>
                   {activeMilestoneNodes.map((node) => {
                     const uncompletedCount = (node.subTasks || []).filter(
                       (st) => !st.completed && !activeTaskChecklistIds.has(st.id),
@@ -320,7 +320,7 @@ export function ObjectiveDialog({
                 >
                   <span className="flex items-center gap-1">
                     <ListCheck className="size-3 text-cyan-400" />
-                    2. SELECT UNCOMPLETED CHECKLIST ITEM
+                    2. SELECT CHECKLIST ITEM
                   </span>
                   {availableChecklistItems.length === 0 && (
                     <span className="text-amber-400 text-[10px]">
@@ -340,7 +340,7 @@ export function ObjectiveDialog({
                         "font-mono text-xs pr-8 bg-[#0D131F] border-border/70 text-foreground cursor-pointer appearance-none",
                       )}
                     >
-                      <option value="">-- Select an item to autofill title --</option>
+                      <option value="">-- Select an item to fill in title --</option>
                       {availableChecklistItems.map((item) => (
                         <option key={item.id} value={item.id}>
                           {item.title}
@@ -379,7 +379,7 @@ export function ObjectiveDialog({
 
           <div className="space-y-1.5">
             <label className="label-mono block" htmlFor="obj-title">
-              Objective title
+              Task title
             </label>
             <input
               id="obj-title"
@@ -387,21 +387,21 @@ export function ObjectiveDialog({
               onChange={(e) => setTitle(e.target.value)}
               required
               autoFocus
-              placeholder="e.g. Finish TryHackMe AD room"
+              placeholder="e.g. Finish lab exercises"
               className={field}
             />
           </div>
 
           <div className="space-y-1.5">
             <label className="label-mono block" htmlFor="obj-desc">
-              Description / notes
+              Notes
             </label>
             <textarea
               id="obj-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
-              placeholder="Lab room, CVE references, chapter numbers…"
+              placeholder="References, chapter numbers, or specific steps…"
               className={cn(field, "resize-none")}
             />
           </div>
@@ -433,7 +433,7 @@ export function ObjectiveDialog({
             <div className="flex items-center justify-between">
               <span className="label-mono flex items-center gap-1.5 text-foreground font-bold">
                 <Clock className="size-3 text-cyan-400" />
-                Allocated Focus Duration
+                Estimated focus time
               </span>
               <span className="font-mono text-xs font-bold text-cyan-400">
                 {formatDuration(durationMinutes)}
@@ -474,7 +474,7 @@ export function ObjectiveDialog({
                     : "border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10",
                 )}
               >
-                Custom Mins
+                Custom
               </button>
 
               {isCustomDuration && (
@@ -560,7 +560,7 @@ export function ObjectiveDialog({
                 type="submit"
                 className="rounded-md border border-primary/60 bg-primary/10 px-4 py-2 font-mono text-[11px] tracking-wide text-primary transition-all hover:bg-primary/20 hover:shadow-[0_0_18px_-4px_rgba(0,229,255,0.45)]"
               >
-                {mode === "create" ? "DEPLOY OBJECTIVE" : "SAVE CHANGES"}
+                {mode === "create" ? "ADD TASK" : "SAVE CHANGES"}
               </button>
             </div>
           </DialogFooter>

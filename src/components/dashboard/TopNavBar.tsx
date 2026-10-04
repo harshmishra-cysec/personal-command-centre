@@ -9,16 +9,16 @@ export interface TopNavBarProps {
 }
 
 export const TOP_NAV_ITEMS = [
-  { id: "today", label: "Daily Dash", icon: CalendarCheck, code: "01" },
+  { id: "today", label: "Today", icon: CalendarCheck, code: "01" },
   { id: "roadmaps", label: "Roadmaps", icon: Map, code: "02" },
-  { id: "reality", label: "Re-Check", icon: ScanEye, code: "03" },
-  { id: "stats", label: "Telemetry", icon: BarChart3, code: "04" },
+  { id: "reality", label: "Refocus", icon: ScanEye, code: "03" },
+  { id: "stats", label: "Stats", icon: BarChart3, code: "04" },
 ] as const;
 
 export function TopNavBar({ activeTab, onTabChange, className }: TopNavBarProps) {
   return (
     <nav
-      aria-label="Tactical Navigation"
+      aria-label="Main Navigation"
       className={cn(
         "relative flex items-center gap-1 sm:gap-1.5 p-1 rounded-xl",
         "bg-gradient-to-b from-[#111927]/90 via-[#0d1422]/95 to-[#070b13]/98",
