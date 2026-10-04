@@ -22,8 +22,8 @@ export const supabase =
     isSupabaseConfigured ? supabaseAnonKey : "placeholder-anon-key",
     {
       auth: {
-        persistSession: false,
-        autoRefreshToken: false,
+        persistSession: true,
+        autoRefreshToken: true,
         detectSessionInUrl: false,
       },
       realtime: {

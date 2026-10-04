@@ -380,6 +380,21 @@ export async function syncAllFromSupabase(): Promise<SyncedCloudData> {
     };
   }
 
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    setSyncStatus("offline");
+    return {
+      boards: loadBoards(),
+      roadmaps: loadRoadmaps(),
+      streak: readStreak(),
+      intercepts: loadInterceptsCount(),
+      isCloud: false,
+    };
+  }
+
   setSyncStatus("syncing");
 
   try {
@@ -773,12 +788,14 @@ export function useTasksRealtime(setTasks: React.Dispatch<React.SetStateAction<T
 export function usePccRealtime({
   setBoards,
   setStreak,
+  enabled = true,
 }: {
   setBoards: React.Dispatch<React.SetStateAction<Board[]>>;
   setStreak?: React.Dispatch<React.SetStateAction<number>>;
+  enabled?: boolean;
 }): void {
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
+    if (!enabled || !isSupabaseConfigured) return;
     let isMounted = true;
 
     const channel = supabase
@@ -965,7 +982,7 @@ export function usePccRealtime({
       isMounted = false;
       supabase.removeChannel(channel);
     };
-  }, [setBoards, setStreak]);
+  }, [setBoards, setStreak, enabled]);
 }
 
 /**

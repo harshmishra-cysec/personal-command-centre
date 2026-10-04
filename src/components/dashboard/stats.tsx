@@ -42,7 +42,7 @@ export function StatsRow({
           <span className="ml-0.5 text-base text-muted-foreground">h</span>
         </p>
         <p className="mt-3 text-[11px] text-muted-foreground">
-          Calculated from live stopwatch logs & completed objectives
+          Calculated from live stopwatch logs and completed tasks
         </p>
       </Panel>
 

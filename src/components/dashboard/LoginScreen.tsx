@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 interface LoginScreenProps {
   onBack: () => void;
@@ -7,80 +8,106 @@ interface LoginScreenProps {
 }
 
 export function LoginScreen({ onBack, onSuccess }: LoginScreenProps) {
-  const [mode, setMode] = useState<"login" | "create">("login");
-  const [emailOrId, setEmailOrId] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const firstInputRef = useRef<HTMLInputElement>(null);
-  const hasSubmittedRef = useRef(false);
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const hasSucceededRef = useRef(false);
 
-  // Focus the first input field on mount and when switching tabs
+  // Focus the email field on mount
   useEffect(() => {
-    firstInputRef.current?.focus({ preventScroll: true });
-  }, [mode]);
+    emailInputRef.current?.focus({ preventScroll: true });
+  }, []);
 
-  const switchMode = (newMode: "login" | "create") => {
-    setMode(newMode);
-    setEmailOrId("");
-    setPassword("");
-    setFullName("");
-    setEmail("");
-    setConfirmPassword("");
-    setShowPassword(false);
-    setShowConfirmPassword(false);
-    setErrors({});
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (hasSubmittedRef.current || isSuccess) return;
+    if (loading || hasSucceededRef.current) return;
 
-    const newErrors: Record<string, string> = {};
-
-    if (mode === "login") {
-      if (!emailOrId.trim()) {
-        newErrors.emailOrId = "Enter your email or operator ID.";
-      }
-      if (!password) {
-        newErrors.password = "Enter your password.";
-      }
-    } else {
-      if (!fullName.trim()) {
-        newErrors.fullName = "Enter your full name.";
-      }
-      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!email.trim() || !emailPattern.test(email.trim())) {
-        newErrors.email = "Enter a valid email address.";
-      }
-      if (!password || password.length < 6) {
-        newErrors.password = "Password must be at least 6 characters.";
-      }
-      if (confirmPassword !== password) {
-        newErrors.confirmPassword = "Passwords do not match.";
-      }
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    if (!isSupabaseConfigured) {
+      setErrorMessage("Login isn't set up yet. Please check the Supabase settings.");
       return;
     }
 
-    setErrors({});
-    setIsSuccess(true);
+    const emailTrimmed = email.trim();
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    setTimeout(() => {
-      if (!hasSubmittedRef.current) {
-        hasSubmittedRef.current = true;
+    if (!emailTrimmed) {
+      setErrorMessage("Enter your email.");
+      return;
+    }
+
+    if (!emailPattern.test(emailTrimmed)) {
+      setErrorMessage("Enter a valid email address.");
+      return;
+    }
+
+    if (!password) {
+      setErrorMessage("Enter your password.");
+      return;
+    }
+
+    setErrorMessage("");
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: emailTrimmed,
+        password,
+      });
+
+      if (error) {
+        setPassword("");
+        setLoading(false);
+
+        const status = error.status;
+        const msg = (error.message || "").toLowerCase();
+
+        if (
+          status === 429 ||
+          msg.includes("rate limit") ||
+          msg.includes("too many")
+        ) {
+          setErrorMessage("Too many attempts. Please wait a minute and try again.");
+        } else if (
+          status === 400 ||
+          msg.includes("invalid login credentials") ||
+          msg.includes("invalid credentials")
+        ) {
+          setErrorMessage("Incorrect email or password.");
+        } else if (
+          msg.includes("network") ||
+          msg.includes("fetch") ||
+          (typeof navigator !== "undefined" && !navigator.onLine)
+        ) {
+          setErrorMessage("Couldn't connect. Check your internet and try again.");
+        } else {
+          setErrorMessage("Something went wrong. Please try again.");
+        }
+        return;
+      }
+
+      // Success: call onSuccess exactly once
+      if (!hasSucceededRef.current) {
+        hasSucceededRef.current = true;
         onSuccess();
       }
-    }, 600);
+    } catch (err: unknown) {
+      setPassword("");
+      setLoading(false);
+      const errStr = String(err).toLowerCase();
+      if (
+        errStr.includes("network") ||
+        errStr.includes("fetch") ||
+        (typeof navigator !== "undefined" && !navigator.onLine)
+      ) {
+        setErrorMessage("Couldn't connect. Check your internet and try again.");
+      } else {
+        setErrorMessage("Something went wrong. Please try again.");
+      }
+    }
   };
 
   return (
@@ -104,17 +131,19 @@ export function LoginScreen({ onBack, onSuccess }: LoginScreenProps) {
 
       <div className="p-5 sm:p-7">
         {/* Top Bar: Back Button */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-3">
           <button
             type="button"
             onClick={onBack}
-            className="font-mono text-[11px] text-white/50 hover:text-white transition-colors cursor-pointer select-none"
+            disabled={loading}
+            className="flex items-center gap-1.5 font-sans text-xs text-white/50 hover:text-white transition-colors cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            &lt; BACK
+            <ArrowLeft className="size-3.5" />
+            <span>Back</span>
           </button>
         </div>
 
-        {/* Logo Frame */}
+        {/* Centered Logo Frame */}
         <div className="relative rounded-xl border border-white/10 bg-[#0F1523] p-2 shadow-xl w-full max-w-[240px] flex items-center justify-center overflow-hidden mx-auto mb-4">
           <span aria-hidden className="absolute top-1 left-1 size-2 border-t-2 border-l-2 border-[#D4AF37]" />
           <span aria-hidden className="absolute top-1 right-1 size-2 border-t-2 border-r-2 border-[#D4AF37]" />
@@ -129,254 +158,100 @@ export function LoginScreen({ onBack, onSuccess }: LoginScreenProps) {
           />
         </div>
 
-        {/* Segmented Tabs: LOGIN | CREATE ACCOUNT */}
-        <div className="grid grid-cols-2 border-b border-white/10 mb-6">
-          <button
-            type="button"
-            onClick={() => switchMode("login")}
-            className={`font-mono font-medium uppercase tracking-[0.15em] text-xs h-[44px] transition-colors cursor-pointer rounded-none border-b-2 ${
-              mode === "login"
-                ? "border-[#D4AF37] text-white"
-                : "border-transparent text-white/50 hover:text-white/80"
-            }`}
-          >
-            LOGIN
-          </button>
-          <button
-            type="button"
-            onClick={() => switchMode("create")}
-            className={`font-mono font-medium uppercase tracking-[0.15em] text-xs h-[44px] transition-colors cursor-pointer rounded-none border-b-2 ${
-              mode === "create"
-                ? "border-[#D4AF37] text-white"
-                : "border-transparent text-white/50 hover:text-white/80"
-            }`}
-          >
-            CREATE ACCOUNT
-          </button>
-        </div>
-
-        {/* Header Block Per Mode */}
-        <div className="mb-6">
-          <span className="font-mono text-[11px] font-medium tracking-[0.3em] uppercase text-[#00E5FF] block mb-1">
-            {mode === "login" ? "[ ACCESS // OPERATOR LOGIN ]" : "[ ACCESS // NEW OPERATOR ]"}
-          </span>
+        {/* Centered Header Text */}
+        <div className="mb-6 text-center">
           <h2 className="font-display font-bold text-2xl sm:text-[28px] leading-tight text-white">
-            {mode === "login" ? "Welcome back, Operator." : "Create your account."}
+            Welcome back
           </h2>
           <p className="font-sans font-normal text-sm text-white/70 mt-1">
-            {mode === "login"
-              ? "Sign in to open your command deck."
-              : "Set up your operator profile to get started."}
+            Log in to continue to your dashboard.
           </p>
         </div>
 
         {/* Form Container */}
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
-          <div aria-live="polite" className="sr-only">
-            {Object.values(errors).join(" ")}
+          {/* Live error region */}
+          <div aria-live="polite" className="min-h-[20px]">
+            {errorMessage && (
+              <p className="font-sans font-normal text-xs text-[#FCA5A5] text-left">
+                {errorMessage}
+              </p>
+            )}
           </div>
 
-          {mode === "login" ? (
-            <>
-              {/* Login Field: Email or Operator ID */}
-              <div>
-                <label
-                  htmlFor="login-email-id"
-                  className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/60 font-medium mb-1 block"
-                >
-                  EMAIL OR OPERATOR ID
-                </label>
-                <input
-                  ref={firstInputRef}
-                  id="login-email-id"
-                  type="text"
-                  autoComplete="username"
-                  value={emailOrId}
-                  onChange={(e) => setEmailOrId(e.target.value)}
-                  className={`w-full h-[44px] px-3 bg-[#0B1220] font-mono text-sm text-white border-[1.5px] rounded-none focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/50 ${
-                    errors.emailOrId ? "border-[#EF4444]" : "border-white/25"
-                  }`}
-                />
-                {errors.emailOrId && (
-                  <p className="font-sans font-normal text-xs text-[#FCA5A5] mt-1">{errors.emailOrId}</p>
-                )}
-              </div>
+          {/* Email Field */}
+          <div>
+            <label
+              htmlFor="login-email"
+              className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/60 font-medium mb-1 block text-left"
+            >
+              Email
+            </label>
+            <input
+              ref={emailInputRef}
+              id="login-email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              disabled={loading}
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (errorMessage) setErrorMessage("");
+              }}
+              className={`w-full h-[44px] px-3 bg-[#0B1220] font-mono text-sm text-white border-[1.5px] rounded-none focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/50 disabled:opacity-50 disabled:cursor-not-allowed ${
+                errorMessage ? "border-[#EF4444]" : "border-white/25"
+              }`}
+            />
+          </div>
 
-              {/* Login Field: Password */}
-              <div>
-                <label
-                  htmlFor="login-password"
-                  className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/60 font-medium mb-1 block"
-                >
-                  PASSWORD
-                </label>
-                <div className="relative">
-                  <input
-                    id="login-password"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={`w-full h-[44px] pl-3 pr-11 bg-[#0B1220] font-mono text-sm text-white border-[1.5px] rounded-none focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/50 ${
-                      errors.password ? "border-[#EF4444]" : "border-white/25"
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    className="absolute right-0 top-0 w-11 h-11 flex items-center justify-center text-white/50 hover:text-white transition-colors cursor-pointer"
-                  >
-                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                  </button>
-                </div>
-                {errors.password && (
-                  <p className="font-sans font-normal text-xs text-[#FCA5A5] mt-1">{errors.password}</p>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Create Field: Full Name */}
-              <div>
-                <label
-                  htmlFor="create-name"
-                  className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/60 font-medium mb-1 block"
-                >
-                  FULL NAME
-                </label>
-                <input
-                  ref={firstInputRef}
-                  id="create-name"
-                  type="text"
-                  autoComplete="name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className={`w-full h-[44px] px-3 bg-[#0B1220] font-mono text-sm text-white border-[1.5px] rounded-none focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/50 ${
-                    errors.fullName ? "border-[#EF4444]" : "border-white/25"
-                  }`}
-                />
-                {errors.fullName && (
-                  <p className="font-sans font-normal text-xs text-[#FCA5A5] mt-1">{errors.fullName}</p>
-                )}
-              </div>
-
-              {/* Create Field: Email */}
-              <div>
-                <label
-                  htmlFor="create-email"
-                  className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/60 font-medium mb-1 block"
-                >
-                  EMAIL
-                </label>
-                <input
-                  id="create-email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full h-[44px] px-3 bg-[#0B1220] font-mono text-sm text-white border-[1.5px] rounded-none focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/50 ${
-                    errors.email ? "border-[#EF4444]" : "border-white/25"
-                  }`}
-                />
-                {errors.email && (
-                  <p className="font-sans font-normal text-xs text-[#FCA5A5] mt-1">{errors.email}</p>
-                )}
-              </div>
-
-              {/* Create Field: Password */}
-              <div>
-                <label
-                  htmlFor="create-password"
-                  className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/60 font-medium mb-1 block"
-                >
-                  PASSWORD
-                </label>
-                <div className="relative">
-                  <input
-                    id="create-password"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="new-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={`w-full h-[44px] pl-3 pr-11 bg-[#0B1220] font-mono text-sm text-white border-[1.5px] rounded-none focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/50 ${
-                      errors.password ? "border-[#EF4444]" : "border-white/25"
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    className="absolute right-0 top-0 w-11 h-11 flex items-center justify-center text-white/50 hover:text-white transition-colors cursor-pointer"
-                  >
-                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                  </button>
-                </div>
-                {errors.password && (
-                  <p className="font-sans font-normal text-xs text-[#FCA5A5] mt-1">{errors.password}</p>
-                )}
-              </div>
-
-              {/* Create Field: Confirm Password */}
-              <div>
-                <label
-                  htmlFor="create-confirm-password"
-                  className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/60 font-medium mb-1 block"
-                >
-                  CONFIRM PASSWORD
-                </label>
-                <div className="relative">
-                  <input
-                    id="create-confirm-password"
-                    type={showConfirmPassword ? "text" : "password"}
-                    autoComplete="new-password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className={`w-full h-[44px] pl-3 pr-11 bg-[#0B1220] font-mono text-sm text-white border-[1.5px] rounded-none focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/50 ${
-                      errors.confirmPassword ? "border-[#EF4444]" : "border-white/25"
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword((prev) => !prev)}
-                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                    className="absolute right-0 top-0 w-11 h-11 flex items-center justify-center text-white/50 hover:text-white transition-colors cursor-pointer"
-                  >
-                    {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                  </button>
-                </div>
-                {errors.confirmPassword && (
-                  <p className="font-sans font-normal text-xs text-[#FCA5A5] mt-1">{errors.confirmPassword}</p>
-                )}
-              </div>
-            </>
-          )}
+          {/* Password Field */}
+          <div>
+            <label
+              htmlFor="login-password"
+              className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/60 font-medium mb-1 block text-left"
+            >
+              Password
+            </label>
+            <div className="relative">
+              <input
+                id="login-password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                disabled={loading}
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errorMessage) setErrorMessage("");
+                }}
+                className={`w-full h-[44px] pl-3 pr-11 bg-[#0B1220] font-mono text-sm text-white border-[1.5px] rounded-none focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6]/50 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  errorMessage ? "border-[#EF4444]" : "border-white/25"
+                }`}
+              />
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="absolute right-0 top-0 w-11 h-11 flex items-center justify-center text-white/50 hover:text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </div>
+          </div>
 
           {/* Submit Button */}
           <div className="pt-2">
             <button
               type="submit"
-              disabled={isSuccess}
+              disabled={loading || !isSupabaseConfigured}
               className="pcc-login-btn w-full"
             >
-              {isSuccess ? "ACCESS GRANTED" : mode === "login" ? "SIGN IN" : "CREATE ACCOUNT"}
+              {loading ? "Logging you in" : "Log in"}
             </button>
           </div>
-
-          {/* Mode Switch Link */}
-          <button
-            type="button"
-            onClick={() => switchMode(mode === "login" ? "create" : "login")}
-            className="font-mono text-xs text-white/60 hover:text-white hover:underline transition-colors mt-3 text-center cursor-pointer block w-full"
-          >
-            {mode === "login" ? "New operator? Create account" : "Already registered? Login"}
-          </button>
         </form>
-
-        {/* Demo Notice */}
-        <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-white/40 text-center mt-6 pt-4 border-t border-white/10">
-          DEMO MODE // NO REAL AUTHENTICATION YET
-        </p>
       </div>
     </div>
   );

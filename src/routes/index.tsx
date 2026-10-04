@@ -29,6 +29,7 @@ import {
 } from "@/lib/pcc-storage";
 import { setRoadmapChecklistItemCompletion, pillarToTrackId } from "@/lib/roadmap-data";
 import { computeFocusHoursFromBoards } from "@/lib/stats-data";
+import { useAuthSession, signOutOwner } from "@/lib/auth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -37,7 +38,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "MOVONE — Tactical command deck tracking cybersecurity, academics, and AIML objectives. One day or Day One. You decide.",
+          "MOVONE: a personal space to plan your day and stay consistent. One day or Day One. You decide.",
       },
       { property: "og:title", content: "MOVONE" },
       {
@@ -55,12 +56,21 @@ function computeCompletion(boards: typeof BOARDS) {
 }
 
 function Index() {
+  const { session, ready } = useAuthSession();
   const [showIntro, setShowIntro] = useState<boolean>(true);
+  const [replayRequested, setReplayRequested] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<TabView>("today");
   const [boards, setBoards] = useState(BOARDS);
   const [streak, setStreak] = useState(0);
   const [syncStatus, setSyncStatusState] = useState<SyncStatus>(() => getSyncStatus());
   const hydrated = useRef(false);
+
+  // Force showIntro to true whenever there is no session
+  useEffect(() => {
+    if (!session) {
+      setShowIntro(true);
+    }
+  }, [session]);
 
   // Task Dialog State
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -80,17 +90,23 @@ function Index() {
     return unsub;
   }, []);
 
-  // Supabase Realtime Zero-Refresh Instant Sync (tasks, roadmaps, user stats)
+  // Supabase Realtime Zero-Refresh Instant Sync (tasks, roadmaps, user stats) - only when logged in
   usePccRealtime({
     setBoards,
     setStreak,
+    enabled: Boolean(session),
   });
 
-  // Hydrate local state first, then sync from Supabase cloud
+  // Hydrate local state first
   useEffect(() => {
     setBoards(loadBoards());
     setStreak(readStreak());
     hydrated.current = true;
+  }, []);
+
+  // Sync from Supabase cloud when signed-in user id becomes available
+  useEffect(() => {
+    if (!session?.user?.id) return;
 
     syncAllFromSupabase()
       .then((synced) => {
@@ -100,7 +116,7 @@ function Index() {
       .catch((err) => {
         console.warn("[MOVONE Supabase] Initial mount sync failed:", err);
       });
-  }, []);
+  }, [session?.user?.id]);
 
   // Sync every change back to localStorage and update the streak
   useEffect(() => {
@@ -114,15 +130,21 @@ function Index() {
 
   const handleIntroComplete = () => {
     setShowIntro(false);
+    setReplayRequested(false);
   };
 
   const handleReplayIntro = () => {
+    setReplayRequested(true);
     try {
       sessionStorage.removeItem("movone_intro_seen");
     } catch {
       // Ignore storage errors in SSR / private browsing
     }
     setShowIntro(true);
+  };
+
+  const handleLogout = async () => {
+    await signOutOwner();
   };
 
   function toggle(boardId: Pillar, taskId: string) {
@@ -323,88 +345,107 @@ function Index() {
     setDialogOpen(false);
   }
 
+  if (!ready) {
+    return <div className="fixed inset-0 bg-[#06080E]" />;
+  }
+
+  const isAuth = Boolean(session);
+  const shouldRenderIntro = !isAuth || showIntro;
+
   return (
     <div className="relative min-h-screen bg-transparent text-foreground flex flex-col overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200">
-      {/* Interactive TryHackMe Breach & Overclock Intro Sequence */}
-      {showIntro && <IntroScreen onComplete={handleIntroComplete} />}
-
-      <div className="relative z-0 flex min-w-0 flex-1 flex-col">
-        <DashHeader
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          onReplayIntro={handleReplayIntro}
-          syncStatus={syncStatus}
+      {/* IntroScreen at stable position in element tree */}
+      {shouldRenderIntro && (
+        <IntroScreen
+          key="movone-intro"
+          isSignedIn={isAuth}
+          replay={replayRequested}
+          onComplete={handleIntroComplete}
         />
+      )}
 
-        <main className="flex-1 w-full max-w-[1720px] mx-auto space-y-4 px-4 pt-4 pb-24 sm:px-6 lg:pl-24 lg:pr-24 xl:pl-28 xl:pr-28 lg:pb-12">
-          {activeTab === "today" && (
-            <>
-              <div className="flex items-center justify-between gap-3 pb-1 border-b border-white/[0.07]">
-                <div className="flex items-center gap-2.5">
-                  <span className="size-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00e5ff] animate-pulse" />
-                  <h2 className="font-mono text-xs font-bold tracking-widest text-cyan-300 uppercase">
-                    Today
-                  </h2>
-                </div>
-                <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider hidden sm:inline">
-                  Your tracks and goals
-                </span>
-              </div>
+      {isAuth && (
+        <>
+          <div className="relative z-0 flex min-w-0 flex-1 flex-col">
+            <DashHeader
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              onReplayIntro={handleReplayIntro}
+              onLogout={handleLogout}
+              syncStatus={syncStatus}
+            />
 
-              <StatsRow completion={completion} streak={streak} focusedHours={focusedHours} />
+            <main className="flex-1 w-full max-w-[1720px] mx-auto space-y-4 px-4 pt-4 pb-24 sm:px-6 lg:pl-24 lg:pr-24 xl:pl-28 xl:pr-28 lg:pb-12">
+              {activeTab === "today" && (
+                <>
+                  <div className="flex items-center justify-between gap-3 pb-1 border-b border-white/[0.07]">
+                    <div className="flex items-center gap-2.5">
+                      <span className="size-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00e5ff] animate-pulse" />
+                      <h2 className="font-mono text-xs font-bold tracking-widest text-cyan-300 uppercase">
+                        Today
+                      </h2>
+                    </div>
+                    <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider hidden sm:inline">
+                      Your tracks and goals
+                    </span>
+                  </div>
 
-              <div className="grid gap-4 lg:grid-cols-3">
-                {boards.map((board) => (
-                  <PillarBoard
-                    key={board.id}
-                    board={board}
-                    onToggle={toggle}
-                    onNew={openNew}
-                    onOpenTask={openTask}
-                    onStartTimer={handleStartTimer}
-                  />
-                ))}
-              </div>
-            </>
+                  <StatsRow completion={completion} streak={streak} focusedHours={focusedHours} />
+
+                  <div className="grid gap-4 lg:grid-cols-3">
+                    {boards.map((board) => (
+                      <PillarBoard
+                        key={board.id}
+                        board={board}
+                        onToggle={toggle}
+                        onNew={openNew}
+                        onOpenTask={openTask}
+                        onStartTimer={handleStartTimer}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {activeTab === "roadmaps" && <RoadmapsView />}
+              {activeTab === "reality" && (
+                <RealityCheckView onNavigateToToday={() => setActiveTab("today")} />
+              )}
+              {activeTab === "stats" && <StatsView />}
+            </main>
+          </div>
+
+          {/* Floating Tactical Chronometer Dock on Left Gutter */}
+          <TacticalChronometerDock />
+
+          {/* Floating Tactical Quick Links Dock on Right Gutter */}
+          <TacticalQuickDock />
+
+          <MobileBottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
+
+          {/* Task Creation & Edit Modal */}
+          <ObjectiveDialog
+            open={dialogOpen}
+            mode={mode}
+            initialPillar={activePillar}
+            initialTask={activeTask}
+            allActiveTasks={boards.flatMap((b) => b.tasks)}
+            onOpenChange={setDialogOpen}
+            onSubmit={submit}
+            onDelete={remove}
+          />
+
+          {/* Floating / Full Tactical Focus Stopwatch */}
+          {activeStopwatch && (
+            <TaskStopwatchModal
+              task={activeStopwatch.task}
+              pillar={activeStopwatch.pillar}
+              onClose={() => setActiveStopwatch(null)}
+              onFinishTask={handleFinishTimerTask}
+              onUpdateFocusMinutes={handleUpdateFocusMinutes}
+            />
           )}
-
-          {activeTab === "roadmaps" && <RoadmapsView />}
-          {activeTab === "reality" && (
-            <RealityCheckView onNavigateToToday={() => setActiveTab("today")} />
-          )}
-          {activeTab === "stats" && <StatsView />}
-        </main>
-      </div>
-
-      {/* Floating Tactical Chronometer Dock on Left Gutter */}
-      <TacticalChronometerDock />
-
-      {/* Floating Tactical Quick Links Dock on Right Gutter */}
-      <TacticalQuickDock />
-
-      <MobileBottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
-
-      {/* Task Creation & Edit Modal */}
-      <ObjectiveDialog
-        open={dialogOpen}
-        mode={mode}
-        initialPillar={activePillar}
-        initialTask={activeTask}
-        allActiveTasks={boards.flatMap((b) => b.tasks)}
-        onOpenChange={setDialogOpen}
-        onSubmit={submit}
-        onDelete={remove}
-      />
-
-      {/* Floating / Full Tactical Focus Stopwatch */}
-      {activeStopwatch && (
-        <TaskStopwatchModal
-          task={activeStopwatch.task}
-          pillar={activeStopwatch.pillar}
-          onClose={() => setActiveStopwatch(null)}
-          onFinishTask={handleFinishTimerTask}
-          onUpdateFocusMinutes={handleUpdateFocusMinutes}
-        />
+        </>
       )}
     </div>
   );

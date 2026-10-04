@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { LogOut } from "lucide-react";
 import { getSyncStatus, subscribeSyncStatus, type SyncStatus } from "@/lib/pcc-storage";
 import { TopNavBar } from "@/components/dashboard/TopNavBar";
 import { TacticalQuoteModule } from "@/components/dashboard/TacticalQuoteModule";
@@ -8,6 +9,7 @@ export interface DashHeaderProps {
   activeTab: TabView;
   setActiveTab: (tab: TabView) => void;
   onReplayIntro?: () => void;
+  onLogout?: () => void;
   syncStatus?: SyncStatus;
 }
 
@@ -15,6 +17,7 @@ export function DashHeader({
   activeTab,
   setActiveTab,
   onReplayIntro,
+  onLogout,
   syncStatus: propSyncStatus,
 }: DashHeaderProps) {
   const [internalSyncStatus, setInternalSyncStatus] = useState<SyncStatus>(() => getSyncStatus());
@@ -50,26 +53,26 @@ export function DashHeader({
               {syncStatus === "synced" ? (
                 <span
                   className="inline-flex items-center gap-1.5 font-mono text-[9px] sm:text-[9.5px] text-emerald-400 font-semibold tracking-wider"
-                  title="Synced to cloud"
+                  title="Synced with the cloud"
                 >
                   <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" />
-                  SYNCED
+                  Synced
                 </span>
               ) : syncStatus === "syncing" ? (
                 <span
                   className="inline-flex items-center gap-1.5 font-mono text-[9px] sm:text-[9.5px] text-cyan-400 font-semibold tracking-wider"
-                  title="Syncing..."
+                  title="Syncing with the cloud"
                 >
                   <span className="size-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)] animate-ping" />
-                  SYNCING...
+                  Syncing
                 </span>
               ) : (
                 <span
                   className="inline-flex items-center gap-1.5 font-mono text-[9px] sm:text-[9.5px] text-amber-400/90 tracking-wider"
-                  title="Saved in your browser"
+                  title="Not connected to the cloud"
                 >
                   <span className="size-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
-                  SAVED LOCALLY
+                  Saved on this device only
                 </span>
               )}
             </div>
@@ -81,9 +84,23 @@ export function DashHeader({
           <TopNavBar activeTab={activeTab} onTabChange={setActiveTab} />
         </div>
 
-        {/* Zone 3 (Far Right): Compact Quote Module pushed flush to top right */}
-        <div className="hidden lg:flex items-center justify-end shrink-0">
-          <TacticalQuoteModule />
+        {/* Zone 3 (Far Right): Compact Quote Module on desktop + Log out button on all screens */}
+        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+          <div className="hidden lg:flex items-center justify-end">
+            <TacticalQuoteModule />
+          </div>
+
+          {onLogout && (
+            <button
+              type="button"
+              onClick={onLogout}
+              aria-label="Log out"
+              title="Log out"
+              className="size-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/60 hover:text-white hover:bg-white/10 hover:border-white/20 transition-colors cursor-pointer select-none"
+            >
+              <LogOut className="size-4" />
+            </button>
+          )}
         </div>
       </div>
     </header>

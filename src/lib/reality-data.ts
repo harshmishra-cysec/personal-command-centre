@@ -9,8 +9,8 @@ export const HARD_TRUTHS: RealityQuote[] = [
   {
     id: "truth-1",
     theme: "discipline",
-    quote: "Every hour lost to cheap algorithms delays your independence and security.",
-    subtext: "You are trading permanent mastery for 15-second synthetic dopamine loops.",
+    quote: "Every hour lost to feeds delays your independence and goals.",
+    subtext: "You are trading long-term skill for short video loops.",
   },
   {
     id: "truth-2",
@@ -18,23 +18,23 @@ export const HARD_TRUTHS: RealityQuote[] = [
     quote:
       "Comfort now is debt paid with interest tomorrow by you and the people who depend on you.",
     subtext:
-      "Your family's future stability is purchased with the uncomfortable hours you put in right now.",
+      "Your future stability is earned with the uncomfortable hours you put in right now.",
   },
   {
     id: "truth-3",
     theme: "mastery",
     quote:
-      "The top 1% in Cyber, Systems, and AI do not doomscroll. They build when they are tired.",
+      "The top students in cybersecurity, systems, and AI do not doomscroll. They build even when tired.",
     subtext:
-      "While you scroll, someone else is dissecting the kernel, breaking the AD domain, and training the model.",
+      "While you scroll, someone else is solving problems, writing code, and mastering their field.",
   },
   {
     id: "truth-4",
     theme: "future",
     quote:
-      "In 3 years, you will either celebrate relentless consistency or mourn wasted potential.",
+      "In three years, you will either celebrate daily consistency or regret wasted potential.",
     subtext:
-      "There is no middle ground. The algorithm was designed by PhDs to steal your ambition.",
+      "There is no middle ground. Social feeds were designed to keep you scrolling.",
   },
 ];
 
