@@ -24,10 +24,11 @@ import {
   subscribeSyncStatus,
   syncAllFromSupabase,
   updateTaskInSupabase,
+  upsertRoadmapTrackToSupabase,
   usePccRealtime,
   type SyncStatus,
 } from "@/lib/pcc-storage";
-import { setRoadmapChecklistItemCompletion, pillarToTrackId } from "@/lib/roadmap-data";
+import { setRoadmapChecklistItemCompletion } from "@/lib/roadmap-data";
 import { computeFocusHoursFromBoards } from "@/lib/stats-data";
 import { useAuthSession, signOutOwner } from "@/lib/auth";
 
@@ -147,6 +148,14 @@ function Index() {
     await signOutOwner();
   };
 
+  function syncRoadmapChecklistItem(nodeId?: string, checklistItemId?: string, done = false) {
+    if (!nodeId || !checklistItemId) return;
+    const result = setRoadmapChecklistItemCompletion(nodeId, checklistItemId, done);
+    if (result) {
+      upsertRoadmapTrackToSupabase(result.updatedTrackId, result.updatedNodes);
+    }
+  }
+
   function toggle(boardId: Pillar, taskId: string) {
     let updatedTaskForCloud: Task | null = null;
     let targetTask: Task | null = null;
@@ -184,13 +193,7 @@ function Index() {
       // Bidirectional sync with Roadmap checklist
       const taskObj: Task = updatedTaskForCloud;
       if (taskObj.node_id && taskObj.checklist_item_id) {
-        const trackId = pillarToTrackId(boardId);
-        setRoadmapChecklistItemCompletion(
-          trackId,
-          taskObj.node_id,
-          taskObj.checklist_item_id,
-          taskObj.done,
-        );
+        syncRoadmapChecklistItem(taskObj.node_id, taskObj.checklist_item_id, taskObj.done);
       }
     }
   }
@@ -243,13 +246,7 @@ function Index() {
       // Bidirectional sync with Roadmap checklist
       const taskObj: Task = updatedTaskForCloud;
       if (taskObj.node_id && taskObj.checklist_item_id) {
-        const trackId = pillarToTrackId(pillar);
-        setRoadmapChecklistItemCompletion(
-          trackId,
-          taskObj.node_id,
-          taskObj.checklist_item_id,
-          true,
-        );
+        syncRoadmapChecklistItem(taskObj.node_id, taskObj.checklist_item_id, true);
       }
     }
   }
@@ -306,9 +303,7 @@ function Index() {
 
     // If task was already completed or updated, sync linked roadmap item
     if (draft.task.node_id && draft.task.checklist_item_id) {
-      const trackId = pillarToTrackId(draft.pillar);
-      setRoadmapChecklistItemCompletion(
-        trackId,
+      syncRoadmapChecklistItem(
         draft.task.node_id,
         draft.task.checklist_item_id,
         draft.task.done,
@@ -333,9 +328,7 @@ function Index() {
     // If removing a linked task that was completed, revert checklist item completion
     const linkedTask: Task | null = taskToRemove;
     if (linkedTask && linkedTask.node_id && linkedTask.checklist_item_id) {
-      const trackId = pillarToTrackId(boardId);
-      setRoadmapChecklistItemCompletion(
-        trackId,
+      syncRoadmapChecklistItem(
         linkedTask.node_id,
         linkedTask.checklist_item_id,
         false,

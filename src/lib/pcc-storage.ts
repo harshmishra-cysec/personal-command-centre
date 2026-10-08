@@ -291,10 +291,16 @@ export function toSupabaseTaskPayload(task: Task, pillar: Pillar): Record<string
   return payload;
 }
 
-export function getTaskPillar(row: Record<string, unknown>, fallback: Pillar = "cyber"): Pillar {
-  const val = String(row.pillar || row.board_id || row.pillar_id || "").toLowerCase();
-  if (val === "cyber" || val === "academics" || val === "aiml") {
+export function getTaskPillar(row: Record<string, unknown>, fallback?: Pillar): Pillar | undefined {
+  const val = String(row.pillar || row.board_id || row.pillar_id || "").toLowerCase().trim();
+  if (val === "cyber" || val === "gold" || val === "emerald") {
     return val as Pillar;
+  }
+  if (val === "academics") {
+    return "gold";
+  }
+  if (val === "aiml") {
+    return "emerald";
   }
   return fallback;
 }
@@ -415,7 +421,7 @@ export async function syncAllFromSupabase(): Promise<SyncedCloudData> {
       } else {
         finalBoards = BOARDS.map((board) => {
           const matchingTasks = (taskRows as Record<string, unknown>[])
-            .filter((row) => (row.pillar || row.board_id) === board.id)
+            .filter((row) => getTaskPillar(row) === board.id)
             .map(fromSupabaseTaskPayload);
 
           return {
@@ -683,12 +689,12 @@ export function subscribePccRealtime(callbacks?: PccRealtimeCallbacks): () => vo
       if (eventType === "INSERT" && payload.new) {
         const row = payload.new as Record<string, unknown>;
         const task = fromSupabaseTaskPayload(row);
-        const pillar = getTaskPillar(row);
+        const pillar = getTaskPillar(row, "cyber") || "cyber";
         callbacks?.onTaskInsert?.(task, pillar);
       } else if (eventType === "UPDATE" && payload.new) {
         const row = payload.new as Record<string, unknown>;
         const task = fromSupabaseTaskPayload(row);
-        const pillar = getTaskPillar(row);
+        const pillar = getTaskPillar(row, "cyber") || "cyber";
         callbacks?.onTaskUpdate?.(task, pillar);
       } else if (eventType === "DELETE" && (payload.old || payload.new)) {
         const row = (payload.old || payload.new) as Record<string, unknown>;
@@ -807,7 +813,7 @@ export function usePccRealtime({
         if (payload.eventType === "INSERT") {
           const raw = payload.new as Record<string, unknown>;
           const newTask = fromSupabaseTaskPayload(raw);
-          const pillar = getTaskPillar(raw);
+          const pillar = getTaskPillar(raw, "cyber") || "cyber";
 
           setBoards((prevBoards) => {
             // Idempotency: guard against duplicate task IDs
@@ -828,7 +834,7 @@ export function usePccRealtime({
         } else if (payload.eventType === "UPDATE") {
           const raw = payload.new as Record<string, unknown>;
           const updatedTask = fromSupabaseTaskPayload(raw);
-          const pillar = getTaskPillar(raw);
+          const validPillar = getTaskPillar(raw);
 
           setBoards((prevBoards) => {
             let originPillar: Pillar | null = null;
@@ -839,10 +845,15 @@ export function usePccRealtime({
               }
             }
 
-            const targetPillar = pillar || originPillar || "cyber";
+            // If the row has no valid pillar, keep the task in the board where it currently is (originPillar).
+            // Never fall back to "cyber" for an existing task.
+            // Only move a task across boards if the row contains an explicitly valid, different pillar.
+            const targetPillar: Pillar = originPillar
+              ? (validPillar ?? originPillar)
+              : (validPillar ?? "cyber");
 
             let nextBoards: Board[];
-            if (originPillar && originPillar !== targetPillar) {
+            if (originPillar && validPillar && originPillar !== validPillar) {
               // Task moved across pillars
               nextBoards = prevBoards.map((b) => {
                 if (b.id === originPillar) {
@@ -851,7 +862,7 @@ export function usePccRealtime({
                     tasks: b.tasks.filter((t) => t.id !== updatedTask.id),
                   };
                 }
-                if (b.id === targetPillar) {
+                if (b.id === validPillar) {
                   return {
                     ...b,
                     tasks: [...b.tasks, updatedTask],
