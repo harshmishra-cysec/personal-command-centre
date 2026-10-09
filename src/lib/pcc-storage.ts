@@ -276,6 +276,7 @@ export function toSupabaseTaskPayload(task: Task, pillar: Pillar): Record<string
     description: task.description || null,
     priority: task.priority,
     completed: task.done,
+    completed_at: task.completedAt || null,
     duration_minutes: task.durationMinutes ?? 45,
     actual_focus_minutes: task.actualFocusMinutes ?? 0,
     pillar: pillar,
@@ -342,6 +343,13 @@ export function fromSupabaseTaskPayload(row: Record<string, unknown>): Task {
         ? row.checklistItemId
         : undefined;
 
+  const completedAt =
+    typeof row.completed_at === "string"
+      ? row.completed_at
+      : typeof row.completedAt === "string"
+        ? row.completedAt
+        : undefined;
+
   return {
     id: String(row.id),
     title: String(row.title || "Untitled Objective"),
@@ -352,6 +360,7 @@ export function fromSupabaseTaskPayload(row: Record<string, unknown>): Task {
         ? row.priority
         : "normal",
     done: isDone,
+    completedAt,
     durationMinutes,
     actualFocusMinutes,
     slot: typeof row.slot === "string" ? row.slot : undefined,
@@ -525,7 +534,21 @@ export async function insertTaskToSupabase(task: Task, pillar: Pillar): Promise<
   if (!isSupabaseConfigured) return;
   try {
     const payload = toSupabaseTaskPayload(task, pillar);
-    const { error } = await supabase.from("tasks").insert(payload);
+    let { error } = await supabase.from("tasks").insert(payload);
+
+    // If column completed_at does not exist on table, retry without completed_at
+    if (
+      error &&
+      (error.code === "PGRST204" ||
+        error.code === "42703" ||
+        String(error.message).includes("completed_at"))
+    ) {
+      const fallbackPayload = { ...payload };
+      delete fallbackPayload.completed_at;
+      const retry = await supabase.from("tasks").insert(fallbackPayload);
+      error = retry.error;
+    }
+
     if (error) {
       console.warn("[MOVONE Supabase] Failed to insert task row:", error);
       setSyncStatus("offline");
@@ -548,6 +571,7 @@ export async function updateTaskInSupabase(task: Task, pillar?: Pillar): Promise
       description: task.description || null,
       priority: task.priority,
       completed: task.done,
+      completed_at: task.completedAt || null,
       duration_minutes: task.durationMinutes ?? 45,
       actual_focus_minutes: task.actualFocusMinutes ?? 0,
       slot: task.slot || null,
@@ -557,7 +581,24 @@ export async function updateTaskInSupabase(task: Task, pillar?: Pillar): Promise
       updatePayload.pillar = pillar;
     }
 
-    const { error } = await supabase.from("tasks").update(updatePayload).eq("id", task.id);
+    let { error } = await supabase.from("tasks").update(updatePayload).eq("id", task.id);
+
+    // If column completed_at does not exist on table, retry without completed_at
+    if (
+      error &&
+      (error.code === "PGRST204" ||
+        error.code === "42703" ||
+        String(error.message).includes("completed_at"))
+    ) {
+      const fallbackPayload = { ...updatePayload };
+      delete fallbackPayload.completed_at;
+      const retry = await supabase
+        .from("tasks")
+        .update(fallbackPayload)
+        .eq("id", task.id);
+      error = retry.error;
+    }
+
     if (error) {
       console.warn("[MOVONE Supabase] Failed to update task row:", error);
       setSyncStatus("offline");

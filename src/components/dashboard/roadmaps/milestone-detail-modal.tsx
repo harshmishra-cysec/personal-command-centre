@@ -20,14 +20,15 @@ import {
   FileEdit,
   Sparkles,
   Zap,
+  Edit2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
+  getNodeLeafCounts,
   calculateNodeProgress,
   type NodeStatus,
   type RoadmapNode,
   type RoadmapSubTask,
-  type RoadmapSubItem,
   type TrackId,
 } from "@/lib/roadmap-data";
 
@@ -57,6 +58,8 @@ export function MilestoneDetailModal({
   const [newSubTaskTitle, setNewSubTaskTitle] = useState("");
   const [activeAddSubItemForId, setActiveAddSubItemForId] = useState<string | null>(null);
   const [newSubItemTitle, setNewSubItemTitle] = useState("");
+  const [editingSubItemId, setEditingSubItemId] = useState<string | null>(null);
+  const [editingSubItemTitle, setEditingSubItemTitle] = useState("");
   const [isEditingMeta, setIsEditingMeta] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -74,6 +77,8 @@ export function MilestoneDetailModal({
       setConfirmDelete(false);
       setActiveAddSubItemForId(null);
       setNewSubItemTitle("");
+      setEditingSubItemId(null);
+      setEditingSubItemTitle("");
     }
   }, [node, open]);
 
@@ -115,17 +120,9 @@ export function MilestoneDetailModal({
   const styles = getAccentStyles();
 
   // Calculate live progress from local subTasks (leaf items)
-  let totalLeafItems = 0;
-  let completedLeafItems = 0;
-  for (const st of subTasks) {
-    if (st.subItems && st.subItems.length > 0) {
-      totalLeafItems += st.subItems.length;
-      completedLeafItems += st.subItems.filter((s) => s.completed).length;
-    } else {
-      totalLeafItems += 1;
-      if (st.completed) completedLeafItems += 1;
-    }
-  }
+  const leafCounts = getNodeLeafCounts({ ...node, subTasks });
+  const totalLeafItems = leafCounts.total;
+  const completedLeafItems = leafCounts.completed;
 
   const progress =
     totalLeafItems > 0
@@ -135,23 +132,24 @@ export function MilestoneDetailModal({
         : 0;
 
   const handleToggleSubTask = (subTaskId: string) => {
+    const target = subTasks.find((st) => st.id === subTaskId);
+    if (target?.children && target.children.length > 0) {
+      // Read-only when item has sub-items
+      return;
+    }
     const updatedSubTasks = subTasks.map((st) => {
       if (st.id === subTaskId) {
-        const nextDone = !st.completed;
-        const updatedSubs = st.subItems
-          ? st.subItems.map((si) => ({ ...si, completed: nextDone }))
-          : undefined;
         return {
           ...st,
-          completed: nextDone,
-          ...(updatedSubs ? { subItems: updatedSubs } : {}),
+          completed: !st.completed,
         };
       }
       return st;
     });
     setSubTasks(updatedSubTasks);
 
-    const allDone = updatedSubTasks.length > 0 && updatedSubTasks.every((st) => st.completed);
+    const counts = getNodeLeafCounts({ ...node, subTasks: updatedSubTasks });
+    const allDone = counts.total > 0 && counts.completed === counts.total;
     let newStatus = status;
     if (allDone) {
       newStatus = "completed";
@@ -175,15 +173,15 @@ export function MilestoneDetailModal({
 
   const handleToggleSubItem = (parentSubTaskId: string, subItemId: string) => {
     const updatedSubTasks = subTasks.map((st) => {
-      if (st.id === parentSubTaskId && st.subItems) {
-        const updatedSubs = st.subItems.map((si) =>
+      if (st.id === parentSubTaskId && st.children) {
+        const updatedChildren = st.children.map((si) =>
           si.id === subItemId ? { ...si, completed: !si.completed } : si,
         );
         const allSubsDone =
-          updatedSubs.length > 0 && updatedSubs.every((si) => si.completed);
+          updatedChildren.length > 0 && updatedChildren.every((si) => si.completed);
         return {
           ...st,
-          subItems: updatedSubs,
+          children: updatedChildren,
           completed: allSubsDone,
         };
       }
@@ -191,7 +189,8 @@ export function MilestoneDetailModal({
     });
     setSubTasks(updatedSubTasks);
 
-    const allDone = updatedSubTasks.length > 0 && updatedSubTasks.every((st) => st.completed);
+    const counts = getNodeLeafCounts({ ...node, subTasks: updatedSubTasks });
+    const allDone = counts.total > 0 && counts.completed === counts.total;
     let newStatus = status;
     if (allDone) {
       newStatus = "completed";
@@ -209,6 +208,40 @@ export function MilestoneDetailModal({
       estimatedHours,
       subTasks: updatedSubTasks,
       status: newStatus,
+    };
+    onUpdateNode(updatedNode);
+  };
+
+  const handleRenameSubItem = (
+    parentSubTaskId: string,
+    subItemId: string,
+    nextTitle: string,
+  ) => {
+    const trimmed = nextTitle.trim();
+    if (!trimmed) return;
+    const updatedSubTasks = subTasks.map((st) => {
+      if (st.id === parentSubTaskId && st.children) {
+        return {
+          ...st,
+          children: st.children.map((c) =>
+            c.id === subItemId ? { ...c, title: trimmed } : c,
+          ),
+        };
+      }
+      return st;
+    });
+    setSubTasks(updatedSubTasks);
+    setEditingSubItemId(null);
+    setEditingSubItemTitle("");
+
+    const updatedNode: RoadmapNode = {
+      ...node,
+      title,
+      description,
+      sequence,
+      estimatedHours,
+      subTasks: updatedSubTasks,
+      status,
     };
     onUpdateNode(updatedNode);
   };
@@ -244,18 +277,18 @@ export function MilestoneDetailModal({
     const titleVal = newSubItemTitle.trim();
     if (!titleVal) return;
 
-    const newSub: RoadmapSubItem = {
-      id: `si-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    const newSub: RoadmapSubTask = {
+      id: `sub-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       title: titleVal,
       completed: false,
     };
 
     const updatedSubTasks = subTasks.map((st) => {
       if (st.id === parentSubTaskId) {
-        const currentSubs = st.subItems || [];
+        const currentSubs = st.children || [];
         return {
           ...st,
-          subItems: [...currentSubs, newSub],
+          children: [...currentSubs, newSub],
           completed: false,
         };
       }
@@ -266,6 +299,14 @@ export function MilestoneDetailModal({
     setNewSubItemTitle("");
     setActiveAddSubItemForId(null);
 
+    const counts = getNodeLeafCounts({ ...node, subTasks: updatedSubTasks });
+    const newStatus =
+      counts.total > 0 && counts.completed === counts.total
+        ? "completed"
+        : status === "completed"
+          ? "active"
+          : status;
+
     const updatedNode: RoadmapNode = {
       ...node,
       title,
@@ -273,20 +314,20 @@ export function MilestoneDetailModal({
       sequence,
       estimatedHours,
       subTasks: updatedSubTasks,
-      status: status === "completed" ? "active" : status,
+      status: newStatus,
     };
     onUpdateNode(updatedNode);
   };
 
   const handleDeleteSubItem = (parentSubTaskId: string, subItemId: string) => {
     const updatedSubTasks = subTasks.map((st) => {
-      if (st.id === parentSubTaskId && st.subItems) {
-        const nextSubs = st.subItems.filter((si) => si.id !== subItemId);
+      if (st.id === parentSubTaskId && st.children) {
+        const nextSubs = st.children.filter((si) => si.id !== subItemId);
         const allSubsDone =
           nextSubs.length > 0 && nextSubs.every((si) => si.completed);
         return {
           ...st,
-          subItems: nextSubs.length > 0 ? nextSubs : undefined,
+          children: nextSubs.length > 0 ? nextSubs : undefined,
           completed: nextSubs.length > 0 ? allSubsDone : st.completed,
         };
       }
@@ -295,8 +336,9 @@ export function MilestoneDetailModal({
 
     setSubTasks(updatedSubTasks);
 
-    const allDone = updatedSubTasks.length > 0 && updatedSubTasks.every((st) => st.completed);
-    const newStatus = allDone ? "completed" : status;
+    const counts = getNodeLeafCounts({ ...node, subTasks: updatedSubTasks });
+    const allDone = counts.total > 0 && counts.completed === counts.total;
+    const newStatus = allDone ? "completed" : status === "completed" ? "active" : status;
 
     const updatedNode: RoadmapNode = {
       ...node,
@@ -314,8 +356,9 @@ export function MilestoneDetailModal({
     const updatedSubTasks = subTasks.filter((st) => st.id !== subTaskId);
     setSubTasks(updatedSubTasks);
 
-    const allDone = updatedSubTasks.length > 0 && updatedSubTasks.every((st) => st.completed);
-    const newStatus = allDone ? "completed" : status;
+    const counts = getNodeLeafCounts({ ...node, subTasks: updatedSubTasks });
+    const allDone = counts.total > 0 && counts.completed === counts.total;
+    const newStatus = allDone ? "completed" : status === "completed" ? "active" : status;
 
     const updatedNode: RoadmapNode = {
       ...node,
@@ -336,8 +379,8 @@ export function MilestoneDetailModal({
       updatedSubTasks = updatedSubTasks.map((st) => ({
         ...st,
         completed: true,
-        ...(st.subItems
-          ? { subItems: st.subItems.map((si) => ({ ...si, completed: true })) }
+        ...(st.children
+          ? { children: st.children.map((si) => ({ ...si, completed: true })) }
           : {}),
       }));
       setSubTasks(updatedSubTasks);
@@ -617,10 +660,10 @@ export function MilestoneDetailModal({
                 </div>
               ) : (
                 subTasks.map((subTask) => {
-                  const hasSubItems = Boolean(subTask.subItems && subTask.subItems.length > 0);
+                  const hasSubItems = Boolean(subTask.children && subTask.children.length > 0);
                   const isAddingSub = activeAddSubItemForId === subTask.id;
-                  const subsCompleted = subTask.subItems
-                    ? subTask.subItems.filter((s) => s.completed).length
+                  const subsCompleted = subTask.children
+                    ? subTask.children.filter((s) => s.completed).length
                     : 0;
 
                   return (
@@ -634,31 +677,51 @@ export function MilestoneDetailModal({
                       )}
                     >
                       <div className="flex items-start gap-3">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleSubTask(subTask.id)}
-                          className="mt-0.5 flex-shrink-0 cursor-pointer text-primary transition-transform active:scale-95"
-                        >
-                          {subTask.completed ? (
-                            <CheckSquare className="size-4 text-emerald" />
-                          ) : (
-                            <Square className="size-4 text-muted-foreground group-hover:text-primary" />
-                          )}
-                        </button>
+                        {hasSubItems ? (
+                          <button
+                            type="button"
+                            disabled
+                            title="Completes automatically when all sub-items are done"
+                            className="mt-0.5 flex-shrink-0 cursor-not-allowed opacity-90"
+                          >
+                            {subTask.completed ? (
+                              <CheckSquare className="size-4 text-emerald" />
+                            ) : (
+                              <Square className="size-4 text-muted-foreground/60" />
+                            )}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleToggleSubTask(subTask.id)}
+                            className="mt-0.5 flex-shrink-0 cursor-pointer text-primary transition-transform active:scale-95"
+                          >
+                            {subTask.completed ? (
+                              <CheckSquare className="size-4 text-emerald" />
+                            ) : (
+                              <Square className="size-4 text-muted-foreground group-hover:text-primary" />
+                            )}
+                          </button>
+                        )}
+
                         <span
-                          onClick={() => handleToggleSubTask(subTask.id)}
+                          onClick={() => {
+                            if (!hasSubItems) handleToggleSubTask(subTask.id);
+                          }}
                           className={cn(
-                            "flex-1 text-xs cursor-pointer select-none leading-relaxed flex items-center gap-2",
+                            "flex-1 text-xs select-none leading-relaxed flex items-center gap-2",
+                            !hasSubItems && "cursor-pointer",
                             subTask.completed && "line-through text-muted-foreground",
                           )}
                         >
                           <span>{subTask.title}</span>
                           {hasSubItems && (
                             <span className="font-mono text-[10px] text-muted-foreground">
-                              ({subsCompleted}/{subTask.subItems!.length})
+                              ({subsCompleted}/{subTask.children!.length})
                             </span>
                           )}
                         </span>
+
                         <button
                           type="button"
                           onClick={() => {
@@ -667,12 +730,13 @@ export function MilestoneDetailModal({
                             );
                             setNewSubItemTitle("");
                           }}
-                          className="flex items-center gap-0.5 rounded border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground hover:text-primary transition-colors"
-                          title="Add sub-task"
+                          className="flex items-center gap-1 rounded border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                          title="Add sub-item"
                         >
                           <Plus className="size-2.5" />
-                          <span>Sub-task</span>
+                          <span>+ sub-item</span>
                         </button>
+
                         <button
                           type="button"
                           onClick={() => handleDeleteSubTask(subTask.id)}
@@ -686,7 +750,7 @@ export function MilestoneDetailModal({
                       {/* Sub-items list */}
                       {hasSubItems && (
                         <div className="ml-7 space-y-1.5 border-l border-white/10 pl-3">
-                          {subTask.subItems!.map((si) => (
+                          {subTask.children!.map((si) => (
                             <div
                               key={si.id}
                               className="group/sub flex items-center gap-2 rounded px-1.5 py-1 hover:bg-white/5 transition-colors"
@@ -702,23 +766,77 @@ export function MilestoneDetailModal({
                                   <Square className="size-3.5 text-muted-foreground hover:text-primary" />
                                 )}
                               </button>
-                              <span
-                                onClick={() => handleToggleSubItem(subTask.id, si.id)}
-                                className={cn(
-                                  "flex-1 text-[11px] cursor-pointer select-none leading-snug",
-                                  si.completed && "line-through text-muted-foreground",
-                                )}
-                              >
-                                {si.title}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteSubItem(subTask.id, si.id)}
-                                className="opacity-0 group-hover/sub:opacity-100 text-muted-foreground/60 hover:text-red-400 p-0.5 transition-opacity"
-                                title="Remove sub-task"
-                              >
-                                <Trash2 className="size-3" />
-                              </button>
+
+                              {editingSubItemId === si.id ? (
+                                <form
+                                  onSubmit={(e) => {
+                                    e.preventDefault();
+                                    handleRenameSubItem(
+                                      subTask.id,
+                                      si.id,
+                                      editingSubItemTitle,
+                                    );
+                                  }}
+                                  className="flex-1 flex items-center gap-1.5"
+                                >
+                                  <input
+                                    type="text"
+                                    value={editingSubItemTitle}
+                                    onChange={(e) =>
+                                      setEditingSubItemTitle(e.target.value)
+                                    }
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Escape") setEditingSubItemId(null);
+                                    }}
+                                    className="flex-1 rounded border border-white/20 bg-[#101725] px-2 py-0.5 font-mono text-[11px] text-foreground focus:border-primary focus:outline-none"
+                                  />
+                                  <button
+                                    type="submit"
+                                    className="rounded bg-primary px-2 py-0.5 font-mono text-[9px] font-bold text-primary-foreground hover:bg-primary/90"
+                                  >
+                                    SAVE
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingSubItemId(null)}
+                                    className="rounded border border-white/10 px-1.5 py-0.5 font-mono text-[9px] text-muted-foreground hover:text-foreground"
+                                  >
+                                    CANCEL
+                                  </button>
+                                </form>
+                              ) : (
+                                <>
+                                  <span
+                                    onClick={() => handleToggleSubItem(subTask.id, si.id)}
+                                    className={cn(
+                                      "flex-1 text-[11px] cursor-pointer select-none leading-snug",
+                                      si.completed && "line-through text-muted-foreground",
+                                    )}
+                                  >
+                                    {si.title}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingSubItemId(si.id);
+                                      setEditingSubItemTitle(si.title);
+                                    }}
+                                    className="opacity-0 group-hover/sub:opacity-100 text-muted-foreground/60 hover:text-primary p-0.5 transition-opacity"
+                                    title="Rename sub-item"
+                                  >
+                                    <Edit2 className="size-2.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteSubItem(subTask.id, si.id)}
+                                    className="opacity-0 group-hover/sub:opacity-100 text-muted-foreground/60 hover:text-red-400 p-0.5 transition-opacity"
+                                    title="Remove sub-item"
+                                  >
+                                    <Trash2 className="size-2.5" />
+                                  </button>
+                                </>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -734,7 +852,7 @@ export function MilestoneDetailModal({
                             type="text"
                             value={newSubItemTitle}
                             onChange={(e) => setNewSubItemTitle(e.target.value)}
-                            placeholder="New sub-task title..."
+                            placeholder="New sub-item title..."
                             autoFocus
                             className="flex-1 rounded border border-white/15 bg-[#101725] px-2.5 py-1 font-mono text-[11px] text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none"
                           />

@@ -1,17 +1,11 @@
 export type TrackId = "cyber" | "academics" | "aiml";
 export type NodeStatus = "completed" | "active" | "locked";
 
-export interface RoadmapSubItem {
-  id: string;
-  title: string;
-  completed: boolean;
-}
-
 export interface RoadmapSubTask {
   id: string;
   title: string;
   completed: boolean;
-  subItems?: RoadmapSubItem[];
+  children?: RoadmapSubTask[];
 }
 
 export interface RoadmapNode {
@@ -99,21 +93,29 @@ export function saveRoadmaps(roadmaps: Record<TrackId, TrackRoadmap>) {
   }
 }
 
-export function calculateNodeProgress(node: RoadmapNode): number {
+export function getNodeLeafCounts(node: RoadmapNode): { total: number; completed: number } {
   if (!node.subTasks || node.subTasks.length === 0) {
-    return node.status === "completed" ? 100 : 0;
+    return { total: 0, completed: 0 };
   }
   let total = 0;
   let completed = 0;
   for (const st of node.subTasks) {
-    if (st.subItems && st.subItems.length > 0) {
-      total += st.subItems.length;
-      completed += st.subItems.filter((si) => si.completed).length;
+    if (st.children && st.children.length > 0) {
+      total += st.children.length;
+      completed += st.children.filter((c) => c.completed).length;
     } else {
       total += 1;
       if (st.completed) completed += 1;
     }
   }
+  return { total, completed };
+}
+
+export function calculateNodeProgress(node: RoadmapNode): number {
+  if (!node.subTasks || node.subTasks.length === 0) {
+    return node.status === "completed" ? 100 : 0;
+  }
+  const { total, completed } = getNodeLeafCounts(node);
   if (total === 0) return node.status === "completed" ? 100 : 0;
   return Math.round((completed / total) * 100);
 }
@@ -127,15 +129,9 @@ export function calculateTrackProgress(nodes: RoadmapNode[]): number {
       total += 1;
       if (n.status === "completed") completed += 1;
     } else {
-      for (const st of n.subTasks) {
-        if (st.subItems && st.subItems.length > 0) {
-          total += st.subItems.length;
-          completed += st.subItems.filter((si) => si.completed).length;
-        } else {
-          total += 1;
-          if (st.completed) completed += 1;
-        }
-      }
+      const counts = getNodeLeafCounts(n);
+      total += counts.total;
+      completed += counts.completed;
     }
   }
   return total > 0 ? Math.round((completed / total) * 100) : 0;
@@ -161,7 +157,6 @@ export function setRoadmapChecklistItemCompletion(
   nodeId: string,
   checklistItemId: string,
   completed: boolean,
-  subItemId?: string,
 ): { updatedTrackId: TrackId; updatedNodes: RoadmapNode[] } | null {
   const roadmaps = loadRoadmaps();
   let affectedTrackId: TrackId | null = null;
@@ -176,54 +171,48 @@ export function setRoadmapChecklistItemCompletion(
       affectedTrackId = tid;
       const targetNode = track.nodes[nodeIndex];
       const subTasks = (targetNode.subTasks || []).map((st) => {
-        // Case A: subItemId explicitly provided
-        if (subItemId && st.id === checklistItemId && st.subItems) {
-          const updatedSubItems = st.subItems.map((si) =>
-            si.id === subItemId ? { ...si, completed } : si,
+        // Case 1: checklistItemId matches a sub-item inside st.children
+        if (st.children && st.children.some((c) => c.id === checklistItemId)) {
+          const updatedChildren = st.children.map((c) =>
+            c.id === checklistItemId ? { ...c, completed } : c,
           );
-          const allSubsDone =
-            updatedSubItems.length > 0 && updatedSubItems.every((si) => si.completed);
+          const allChildrenDone =
+            updatedChildren.length > 0 && updatedChildren.every((c) => c.completed);
           return {
             ...st,
-            subItems: updatedSubItems,
-            completed: allSubsDone,
+            children: updatedChildren,
+            completed: allChildrenDone,
           };
         }
 
-        // Case B: checklistItemId matches a sub-item inside this st
-        if (st.subItems && st.subItems.some((si) => si.id === checklistItemId)) {
-          const updatedSubItems = st.subItems.map((si) =>
-            si.id === checklistItemId ? { ...si, completed } : si,
-          );
-          const allSubsDone =
-            updatedSubItems.length > 0 && updatedSubItems.every((si) => si.completed);
-          return {
-            ...st,
-            subItems: updatedSubItems,
-            completed: allSubsDone,
-          };
-        }
-
-        // Case C: checklistItemId matches this parent st
+        // Case 2: checklistItemId matches this parent st
         if (st.id === checklistItemId) {
-          const updatedSubItems = st.subItems
-            ? st.subItems.map((si) => ({ ...si, completed }))
-            : undefined;
+          if (st.children && st.children.length > 0) {
+            const updatedChildren = st.children.map((c) => ({ ...c, completed }));
+            return {
+              ...st,
+              children: updatedChildren,
+              completed,
+            };
+          }
           return {
             ...st,
             completed,
-            ...(updatedSubItems ? { subItems: updatedSubItems } : {}),
           };
         }
 
         return st;
       });
 
-      const allCompleted = subTasks.length > 0 && subTasks.every((st) => st.completed);
+      const tempNode: RoadmapNode = {
+        ...targetNode,
+        subTasks,
+      };
+      const { total, completed: completedLeaves } = getNodeLeafCounts(tempNode);
       let newStatus: NodeStatus = targetNode.status;
-      if (allCompleted) {
+      if (total > 0 && completedLeaves === total) {
         newStatus = "completed";
-      } else if (targetNode.status === "completed" && !allCompleted) {
+      } else if (targetNode.status === "completed" && completedLeaves < total) {
         newStatus = "active";
       }
 

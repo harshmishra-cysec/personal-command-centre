@@ -12,6 +12,8 @@ import {
 import { cn } from "@/lib/utils";
 import { formatDuration, type Board, type Pillar, type Task } from "@/lib/dash-data";
 
+export const HIDE_COMPLETED_IN_TODAY = true;
+
 export const THEME: Record<
   Pillar,
   { text: string; border: string; bg: string; ring: string; glow: string; icon: typeof ShieldHalf }
@@ -60,7 +62,10 @@ export function PillarBoard({
   const done = board.tasks.filter((t) => t.done).length;
 
   const sortedTasks = useMemo(() => {
-    return [...board.tasks].sort((a, b) => {
+    const list = HIDE_COMPLETED_IN_TODAY
+      ? board.tasks.filter((t) => !t.done)
+      : board.tasks;
+    return [...list].sort((a, b) => {
       if (a.done !== b.done) {
         return a.done ? 1 : -1;
       }

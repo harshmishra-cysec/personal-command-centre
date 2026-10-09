@@ -13,7 +13,6 @@ import {
   type NodeStatus,
   type RoadmapNode,
   type RoadmapSubTask,
-  type RoadmapSubItem,
   type TrackId,
 } from "@/lib/roadmap-data";
 
@@ -101,19 +100,19 @@ export function AddMilestoneModal({
     const parsedSubTasks: RoadmapSubTask[] = checklistItems
       .filter((item) => item.title.trim().length > 0)
       .map((item, i) => {
-        const validSubs: RoadmapSubItem[] = item.subItems
+        const validSubs: RoadmapSubTask[] = item.subItems
           .filter((si) => si.trim().length > 0)
           .map((si, j) => ({
-            id: `si-${Date.now()}-${i}-${j}-${Math.random().toString(36).slice(2, 6)}`,
+            id: `sub-${Date.now()}-${i}-${j}-${Math.random().toString(36).slice(2, 6)}`,
             title: si.trim(),
             completed: status === "completed",
           }));
 
         return {
-          id: `st-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
+          id: `item-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
           title: item.title.trim(),
           completed: status === "completed",
-          ...(validSubs.length > 0 ? { subItems: validSubs } : {}),
+          ...(validSubs.length > 0 ? { children: validSubs } : {}),
         };
       });
 
@@ -319,11 +318,10 @@ export function AddMilestoneModal({
                     <button
                       type="button"
                       onClick={() => handleAddSubItem(i)}
-                      title="Add sub-task"
-                      className="flex items-center gap-0.5 rounded border border-white/10 bg-white/5 px-1.5 py-1 font-mono text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                      className="flex items-center gap-1 rounded border border-white/10 bg-white/5 px-2 py-1 font-mono text-[10px] text-muted-foreground hover:text-primary transition-colors"
                     >
                       <Plus className="size-2.5" />
-                      <span>Sub-task</span>
+                      <span>+ sub-item</span>
                     </button>
                     <button
                       type="button"
@@ -338,15 +336,15 @@ export function AddMilestoneModal({
                     <div className="ml-6 space-y-1.5 border-l border-white/10 pl-3">
                       {item.subItems.map((si, j) => (
                         <div key={j} className="flex items-center gap-2">
-                          <span className="font-mono text-[9px] text-muted-foreground/70">
-                            ↳
+                          <span className="font-mono text-[9px] text-muted-foreground/60 w-3 text-center">
+                            •
                           </span>
                           <input
                             type="text"
                             value={si}
                             onChange={(e) => handleSubItemChange(i, j, e.target.value)}
-                            placeholder={`Sub-task ${j + 1}`}
-                            className="flex-1 rounded border border-white/10 bg-[#101725] px-2 py-1 font-mono text-[11px] text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none"
+                            placeholder={`Sub-item ${j + 1}`}
+                            className="flex-1 rounded border border-white/10 bg-[#101725] px-2.5 py-1 font-mono text-[11px] text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none"
                           />
                           <button
                             type="button"

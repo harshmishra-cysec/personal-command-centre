@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { MobileBottomNav, type TabView } from "@/components/dashboard/nav";
 import { DashHeader } from "@/components/dashboard/header";
@@ -11,6 +11,7 @@ import { StatsView } from "@/components/dashboard/stats-view";
 import { IntroScreen } from "@/components/dashboard/IntroScreen";
 import { TacticalChronometerDock } from "@/components/dashboard/TacticalChronometerDock";
 import { TacticalQuickDock } from "@/components/dashboard/TacticalQuickDock";
+import { CompletedPanel } from "@/components/dashboard/completed-panel";
 import {
   TaskStopwatchModal,
   type InitialTimerState,
@@ -81,6 +82,9 @@ function Index() {
   const [mode, setMode] = useState<"create" | "edit">("create");
   const [activePillar, setActivePillar] = useState<Pillar>("cyber");
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+
+  // Completed Tasks Panel State
+  const [isCompletedPanelOpen, setIsCompletedPanelOpen] = useState(false);
 
   // Active Stopwatch Modal State
   const [activeStopwatch, setActiveStopwatch] = useState<{
@@ -161,6 +165,12 @@ function Index() {
 
   const completion = computeCompletion(boards);
   const focusedHours = computeFocusHoursFromBoards(boards);
+  const completedCount = useMemo(() => {
+    return boards.reduce(
+      (sum, b) => sum + b.tasks.filter((t) => t.done).length,
+      0,
+    );
+  }, [boards]);
 
   const handleIntroComplete = () => {
     setShowIntro(false);
@@ -205,6 +215,7 @@ function Index() {
                   const updated: Task = {
                     ...t,
                     done: nextDone,
+                    completedAt: nextDone ? new Date().toISOString() : undefined,
                     actualFocusMinutes:
                       nextDone && (!t.actualFocusMinutes || t.actualFocusMinutes === 0)
                         ? t.durationMinutes || 45
@@ -278,6 +289,7 @@ function Index() {
                   const updated: Task = {
                     ...t,
                     done: true,
+                    completedAt: t.completedAt || new Date().toISOString(),
                     actualFocusMinutes: (t.actualFocusMinutes || 0) + elapsedMinutes,
                   };
                   updatedTaskForCloud = updated;
@@ -467,7 +479,20 @@ function Index() {
           </div>
 
           {/* Floating Tactical Chronometer Dock on Left Gutter */}
-          <TacticalChronometerDock />
+          <TacticalChronometerDock
+            isTodayTab={activeTab === "today"}
+            completedCount={completedCount}
+            isCompletedPanelOpen={isCompletedPanelOpen}
+            onToggleCompletedPanel={() => setIsCompletedPanelOpen((prev) => !prev)}
+          />
+
+          {/* Slide-in Completed Tasks Panel */}
+          <CompletedPanel
+            open={isCompletedPanelOpen}
+            onClose={() => setIsCompletedPanelOpen(false)}
+            boards={boards}
+            onToggleTask={toggle}
+          />
 
           {/* Floating Tactical Quick Links Dock on Right Gutter */}
           <TacticalQuickDock />

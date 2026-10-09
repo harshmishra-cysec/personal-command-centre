@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   BarChart3,
   CalendarCheck,
+  CheckCircle2,
   Map,
   PanelLeftClose,
   PanelLeftOpen,
@@ -10,13 +11,14 @@ import {
 import { cn } from "@/lib/utils";
 import { MovoneLogo } from "@/components/dashboard/MovoneLogo";
 
-export type TabView = "today" | "roadmaps" | "reality" | "stats";
+export type TabView = "today" | "roadmaps" | "reality" | "stats" | "completed";
 
 export const NAV_ITEMS = [
   { id: "today", label: "Today", icon: CalendarCheck },
   { id: "roadmaps", label: "Roadmaps", icon: Map },
   { id: "reality", label: "Refocus", icon: ScanEye },
   { id: "stats", label: "Stats", icon: BarChart3 },
+  { id: "completed", label: "Completed", icon: CheckCircle2 },
 ] as const;
 
 interface DesktopSidebarProps {
@@ -132,7 +134,7 @@ export function MobileBottomNav({
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 backdrop-blur lg:hidden">
-      <div className="grid grid-cols-4">
+      <div className="grid grid-cols-5">
         {NAV_ITEMS.map((item) => {
           const isActive = activeTab === item.id;
           return (

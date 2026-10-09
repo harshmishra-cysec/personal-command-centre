@@ -15,7 +15,12 @@ import {
   Edit3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { calculateNodeProgress, type RoadmapNode, type TrackId } from "@/lib/roadmap-data";
+import {
+  getNodeLeafCounts,
+  calculateNodeProgress,
+  type RoadmapNode,
+  type TrackId,
+} from "@/lib/roadmap-data";
 
 interface MilestoneNodeCardProps {
   node: RoadmapNode;
@@ -101,19 +106,9 @@ export function MilestoneNodeCard({
     }
   };
 
-  let completedSubTasks = 0;
-  let totalSubTasks = 0;
-  if (node.subTasks) {
-    for (const st of node.subTasks) {
-      if (st.subItems && st.subItems.length > 0) {
-        totalSubTasks += st.subItems.length;
-        completedSubTasks += st.subItems.filter((s) => s.completed).length;
-      } else {
-        totalSubTasks += 1;
-        if (st.completed) completedSubTasks += 1;
-      }
-    }
-  }
+  const leafCounts = getNodeLeafCounts(node);
+  const completedSubTasks = leafCounts.completed;
+  const totalSubTasks = leafCounts.total;
 
   return (
     <div className="relative flex items-stretch gap-3 sm:gap-5 group">
