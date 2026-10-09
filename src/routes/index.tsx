@@ -257,13 +257,14 @@ function Index() {
   }
 
   function handleStartTimer(boardId: Pillar, task: Task) {
+    const savedSecs = task.timerElapsedSeconds || 0;
     setActiveStopwatch({
       task,
       pillar: boardId,
       initialTimerState: {
-        startedAt: Date.now(),
-        accumulatedSeconds: 0,
-        isRunning: true,
+        startedAt: savedSecs > 0 ? null : Date.now(),
+        accumulatedSeconds: savedSecs,
+        isRunning: savedSecs > 0 ? false : true,
         mode: "countdown",
       },
     });
@@ -286,11 +287,15 @@ function Index() {
               ...b,
               tasks: b.tasks.map((t) => {
                 if (t.id === taskId) {
+                  const previouslySavedSecs = t.timerElapsedSeconds || 0;
+                  const previouslySavedMins = Math.round(previouslySavedSecs / 60);
+                  const deltaMinutes = Math.max(0, elapsedMinutes - previouslySavedMins);
                   const updated: Task = {
                     ...t,
                     done: true,
                     completedAt: t.completedAt || new Date().toISOString(),
-                    actualFocusMinutes: (t.actualFocusMinutes || 0) + elapsedMinutes,
+                    actualFocusMinutes: (t.actualFocusMinutes || 0) + deltaMinutes,
+                    timerElapsedSeconds: 0,
                   };
                   updatedTaskForCloud = updated;
                   return updated;
@@ -313,15 +318,49 @@ function Index() {
     }
   }
 
-  function handleUpdateFocusMinutes(pillar: Pillar, taskId: string, elapsedMinutes: number) {
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.removeItem("movone_active_timer");
-      } catch {
-        // Ignore storage error
-      }
+  function handleUpdateFocusMinutes(
+    pillar: Pillar,
+    taskId: string,
+    _elapsedMinutes: number,
+    newElapsedSeconds?: number,
+  ) {
+    let updatedTaskForCloud: Task | null = null;
+    setBoards((prev) =>
+      prev.map((b) =>
+        b.id === pillar
+          ? {
+              ...b,
+              tasks: b.tasks.map((t) => {
+                if (t.id === taskId) {
+                  const nextElapsedSecs =
+                    typeof newElapsedSeconds === "number"
+                      ? newElapsedSeconds
+                      : t.timerElapsedSeconds || 0;
+                  const previouslySavedSecs = t.timerElapsedSeconds || 0;
+                  const deltaMins =
+                    Math.round(nextElapsedSecs / 60) - Math.round(previouslySavedSecs / 60);
+
+                  const updated: Task = {
+                    ...t,
+                    actualFocusMinutes: Math.max(0, (t.actualFocusMinutes || 0) + deltaMins),
+                    timerElapsedSeconds: nextElapsedSecs,
+                  };
+                  updatedTaskForCloud = updated;
+                  return updated;
+                }
+                return t;
+              }),
+            }
+          : b,
+      ),
+    );
+
+    if (updatedTaskForCloud) {
+      updateTaskInSupabase(updatedTaskForCloud, pillar);
     }
-    setActiveStopwatch(null);
+  }
+
+  function handleResetProgress(pillar: Pillar, taskId: string) {
     let updatedTaskForCloud: Task | null = null;
     setBoards((prev) =>
       prev.map((b) =>
@@ -332,7 +371,7 @@ function Index() {
                 if (t.id === taskId) {
                   const updated: Task = {
                     ...t,
-                    actualFocusMinutes: (t.actualFocusMinutes || 0) + elapsedMinutes,
+                    timerElapsedSeconds: 0,
                   };
                   updatedTaskForCloud = updated;
                   return updated;
@@ -514,7 +553,11 @@ function Index() {
           {/* Floating / Full Tactical Focus Stopwatch */}
           {activeStopwatch && (
             <TaskStopwatchModal
-              task={activeStopwatch.task}
+              task={
+                boards
+                  .find((b) => b.id === activeStopwatch.pillar)
+                  ?.tasks.find((t) => t.id === activeStopwatch.task.id) || activeStopwatch.task
+              }
               pillar={activeStopwatch.pillar}
               initialTimerState={activeStopwatch.initialTimerState}
               onClose={() => {
@@ -529,6 +572,7 @@ function Index() {
               }}
               onFinishTask={handleFinishTimerTask}
               onUpdateFocusMinutes={handleUpdateFocusMinutes}
+              onResetProgress={handleResetProgress}
             />
           )}
         </>

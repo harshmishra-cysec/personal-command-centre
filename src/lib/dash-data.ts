@@ -10,6 +10,7 @@ export type Task = {
   priority: Priority;
   durationMinutes: number; // Estimated duration in minutes (default: 45)
   actualFocusMinutes?: number; // Accumulated focus minutes from stopwatch/timer
+  timerElapsedSeconds?: number; // Focus seconds already spent in the current unfinished run
   slot?: string | undefined; // Legacy / secondary time label
   date?: string | undefined;
   done: boolean;

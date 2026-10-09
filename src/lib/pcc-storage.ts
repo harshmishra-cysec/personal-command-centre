@@ -89,6 +89,12 @@ function normalizeTask(rawTask: Record<string, unknown>): Task {
         : done
           ? durationMinutes
           : 0;
+  const timerElapsedSeconds =
+    typeof rawTask.timerElapsedSeconds === "number"
+      ? rawTask.timerElapsedSeconds
+      : typeof rawTask.timer_elapsed_seconds === "number"
+        ? rawTask.timer_elapsed_seconds
+        : 0;
 
   return {
     id,
@@ -98,6 +104,7 @@ function normalizeTask(rawTask: Record<string, unknown>): Task {
     priority,
     durationMinutes,
     actualFocusMinutes,
+    timerElapsedSeconds,
     slot: typeof rawTask.slot === "string" ? rawTask.slot : undefined,
     date: typeof rawTask.date === "string" ? rawTask.date : undefined,
     done,
@@ -279,6 +286,7 @@ export function toSupabaseTaskPayload(task: Task, pillar: Pillar): Record<string
     completed_at: task.completedAt || null,
     duration_minutes: task.durationMinutes ?? 45,
     actual_focus_minutes: task.actualFocusMinutes ?? 0,
+    timer_elapsed_seconds: task.timerElapsedSeconds ?? 0,
     pillar: pillar,
     slot: task.slot || null,
     date: task.date || null,
@@ -330,6 +338,13 @@ export function fromSupabaseTaskPayload(row: Record<string, unknown>): Task {
           ? durationMinutes
           : 0;
 
+  const timerElapsedSeconds =
+    typeof row.timer_elapsed_seconds === "number"
+      ? row.timer_elapsed_seconds
+      : typeof row.timerElapsedSeconds === "number"
+        ? row.timerElapsedSeconds
+        : 0;
+
   const node_id =
     typeof row.node_id === "string"
       ? row.node_id
@@ -363,6 +378,7 @@ export function fromSupabaseTaskPayload(row: Record<string, unknown>): Task {
     completedAt,
     durationMinutes,
     actualFocusMinutes,
+    timerElapsedSeconds,
     slot: typeof row.slot === "string" ? row.slot : undefined,
     date: typeof row.date === "string" ? row.date : undefined,
     node_id,
@@ -536,16 +552,27 @@ export async function insertTaskToSupabase(task: Task, pillar: Pillar): Promise<
     const payload = toSupabaseTaskPayload(task, pillar);
     let { error } = await supabase.from("tasks").insert(payload);
 
-    // If column completed_at does not exist on table, retry without completed_at
+    // If column completed_at or timer_elapsed_seconds does not exist on table, retry safely
     if (
       error &&
       (error.code === "PGRST204" ||
         error.code === "42703" ||
-        String(error.message).includes("completed_at"))
+        String(error.message).includes("completed_at") ||
+        String(error.message).includes("timer_elapsed_seconds"))
     ) {
       const fallbackPayload = { ...payload };
-      delete fallbackPayload.completed_at;
-      const retry = await supabase.from("tasks").insert(fallbackPayload);
+      if (String(error.message).includes("timer_elapsed_seconds") || error.code === "PGRST204" || error.code === "42703") {
+        delete fallbackPayload.timer_elapsed_seconds;
+      }
+      if (String(error.message).includes("completed_at")) {
+        delete fallbackPayload.completed_at;
+      }
+      let retry = await supabase.from("tasks").insert(fallbackPayload);
+      if (retry.error && (retry.error.code === "PGRST204" || retry.error.code === "42703")) {
+        delete fallbackPayload.completed_at;
+        delete fallbackPayload.timer_elapsed_seconds;
+        retry = await supabase.from("tasks").insert(fallbackPayload);
+      }
       error = retry.error;
     }
 
@@ -574,6 +601,7 @@ export async function updateTaskInSupabase(task: Task, pillar?: Pillar): Promise
       completed_at: task.completedAt || null,
       duration_minutes: task.durationMinutes ?? 45,
       actual_focus_minutes: task.actualFocusMinutes ?? 0,
+      timer_elapsed_seconds: task.timerElapsedSeconds ?? 0,
       slot: task.slot || null,
       date: task.date || null,
     };
@@ -583,19 +611,33 @@ export async function updateTaskInSupabase(task: Task, pillar?: Pillar): Promise
 
     let { error } = await supabase.from("tasks").update(updatePayload).eq("id", task.id);
 
-    // If column completed_at does not exist on table, retry without completed_at
+    // If column completed_at or timer_elapsed_seconds does not exist on table, retry safely
     if (
       error &&
       (error.code === "PGRST204" ||
         error.code === "42703" ||
-        String(error.message).includes("completed_at"))
+        String(error.message).includes("completed_at") ||
+        String(error.message).includes("timer_elapsed_seconds"))
     ) {
       const fallbackPayload = { ...updatePayload };
-      delete fallbackPayload.completed_at;
-      const retry = await supabase
+      if (String(error.message).includes("timer_elapsed_seconds") || error.code === "PGRST204" || error.code === "42703") {
+        delete fallbackPayload.timer_elapsed_seconds;
+      }
+      if (String(error.message).includes("completed_at")) {
+        delete fallbackPayload.completed_at;
+      }
+      let retry = await supabase
         .from("tasks")
         .update(fallbackPayload)
         .eq("id", task.id);
+      if (retry.error && (retry.error.code === "PGRST204" || retry.error.code === "42703")) {
+        delete fallbackPayload.completed_at;
+        delete fallbackPayload.timer_elapsed_seconds;
+        retry = await supabase
+          .from("tasks")
+          .update(fallbackPayload)
+          .eq("id", task.id);
+      }
       error = retry.error;
     }
 
@@ -938,6 +980,10 @@ export function usePccRealtime({
                                 updatedTask.actualFocusMinutes !== undefined
                                   ? updatedTask.actualFocusMinutes
                                   : t.actualFocusMinutes,
+                              timerElapsedSeconds:
+                                updatedTask.timerElapsedSeconds !== undefined
+                                  ? updatedTask.timerElapsedSeconds
+                                  : t.timerElapsedSeconds,
                               slot: updatedTask.slot !== undefined ? updatedTask.slot : t.slot,
                               date: updatedTask.date !== undefined ? updatedTask.date : t.date,
                             }

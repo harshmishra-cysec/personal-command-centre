@@ -28,7 +28,8 @@ interface TaskStopwatchModalProps {
   initialTimerState?: InitialTimerState;
   onClose: () => void;
   onFinishTask: (pillar: Pillar, taskId: string, elapsedMinutes: number) => void;
-  onUpdateFocusMinutes: (pillar: Pillar, taskId: string, elapsedMinutes: number) => void;
+  onUpdateFocusMinutes: (pillar: Pillar, taskId: string, elapsedMinutes: number, newElapsedSeconds?: number) => void;
+  onResetProgress?: (pillar: Pillar, taskId: string) => void;
 }
 
 function playTimerDoneSound() {
@@ -79,19 +80,24 @@ export function TaskStopwatchModal({
   onClose,
   onFinishTask,
   onUpdateFocusMinutes,
+  onResetProgress,
 }: TaskStopwatchModalProps) {
   const targetSeconds = (task.durationMinutes || 45) * 60;
+  const initialSavedSeconds = task.timerElapsedSeconds || 0;
 
   const [startedAt, setStartedAt] = useState<number | null>(() => {
     if (initialTimerState) return initialTimerState.startedAt;
+    // If resuming an unfinished run with saved progress, start in paused state
+    if (initialSavedSeconds > 0) return null;
     return Date.now();
   });
   const [accumulatedSeconds, setAccumulatedSeconds] = useState<number>(() => {
     if (initialTimerState) return initialTimerState.accumulatedSeconds;
-    return 0;
+    return initialSavedSeconds;
   });
   const [isRunning, setIsRunning] = useState<boolean>(() => {
     if (initialTimerState) return initialTimerState.isRunning;
+    if (initialSavedSeconds > 0) return false;
     return true;
   });
   const [mode, setMode] = useState<"countdown" | "stopwatch">(() => {
@@ -100,6 +106,7 @@ export function TaskStopwatchModal({
   });
   const [isMinimized, setIsMinimized] = useState(false);
   const [nowTick, setNowTick] = useState<number>(() => Date.now());
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const [pipWindow, setPipWindow] = useState<Window | null>(null);
   const isPipSupported =
@@ -115,6 +122,9 @@ export function TaskStopwatchModal({
 
   const hasNotifiedRef = useRef(false);
   const originalTitleRef = useRef("");
+
+  // Track latest current elapsed seconds via ref for unmount/beforeunload/pagehide saving
+  const currentElapsedRef = useRef(accumulatedSeconds);
 
   // Store original tab title and restore on unmount
   useEffect(() => {
@@ -154,6 +164,47 @@ export function TaskStopwatchModal({
   const secondsElapsed = Math.max(0, Math.floor(currentElapsedExact));
   const remainingSeconds = Math.max(0, targetSeconds - secondsElapsed);
   const progressPercent = Math.min(100, (secondsElapsed / targetSeconds) * 100);
+
+  currentElapsedRef.current = secondsElapsed;
+
+  // Save current progress helper
+  const saveCurrentProgress = (sec: number) => {
+    onUpdateFocusMinutes(pillar, task.id, 0, sec);
+  };
+
+  // Periodic autosave every 60s while running
+  useEffect(() => {
+    if (!isRunning) return;
+    const autoSaveInterval = setInterval(() => {
+      saveCurrentProgress(currentElapsedRef.current);
+    }, 60000);
+    return () => clearInterval(autoSaveInterval);
+  }, [isRunning, pillar, task.id]);
+
+  // Auto-save on page hide / visibility hidden
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handlePageHideOrHidden = () => {
+      saveCurrentProgress(currentElapsedRef.current);
+    };
+
+    const handleVisChange = () => {
+      if (document.visibilityState === "hidden") {
+        saveCurrentProgress(currentElapsedRef.current);
+      }
+    };
+
+    window.addEventListener("pagehide", handlePageHideOrHidden);
+    window.addEventListener("beforeunload", handlePageHideOrHidden);
+    document.addEventListener("visibilitychange", handleVisChange);
+
+    return () => {
+      window.removeEventListener("pagehide", handlePageHideOrHidden);
+      window.removeEventListener("beforeunload", handlePageHideOrHidden);
+      document.removeEventListener("visibilitychange", handleVisChange);
+    };
+  }, [pillar, task.id]);
 
   const formatTimeDisplay = (totalSecs: number) => {
     const hrs = Math.floor(totalSecs / 3600);
@@ -195,21 +246,37 @@ export function TaskStopwatchModal({
 
   // Persist timer state to localStorage under "movone_active_timer"
   useEffect(() => {
+    if (typeof window !== "undefined") return;
+  }, []);
+
+  const persistToLocalStorage = (
+    cStartedAt: number | null,
+    cAccumulated: number,
+    cRunning: boolean,
+    cMode: "countdown" | "stopwatch",
+  ) => {
     if (typeof window === "undefined") return;
     try {
       const payload = {
         taskId: task.id,
         pillar,
-        startedAt,
-        accumulatedSeconds,
-        isRunning,
-        mode,
-        taskSnapshot: task,
+        startedAt: cStartedAt,
+        accumulatedSeconds: cAccumulated,
+        isRunning: cRunning,
+        mode: cMode,
+        taskSnapshot: {
+          ...task,
+          timerElapsedSeconds: Math.floor(cAccumulated),
+        },
       };
       localStorage.setItem("movone_active_timer", JSON.stringify(payload));
     } catch {
       // Storage quota or SSR guard
     }
+  };
+
+  useEffect(() => {
+    persistToLocalStorage(startedAt, accumulatedSeconds, isRunning, mode);
   }, [task, pillar, startedAt, accumulatedSeconds, isRunning, mode]);
 
   // Clean up Picture-in-Picture window if active
@@ -235,10 +302,13 @@ export function TaskStopwatchModal({
     const now = Date.now();
     if (isRunning) {
       const added = startedAt ? Math.max(0, (now - startedAt) / 1000) : 0;
-      setAccumulatedSeconds((prev) => prev + added);
+      const nextAccum = accumulatedSeconds + added;
+      setAccumulatedSeconds(nextAccum);
       setStartedAt(null);
       setIsRunning(false);
       setNowTick(now);
+      // Save progress immediately when pausing
+      saveCurrentProgress(Math.floor(nextAccum));
     } else {
       setStartedAt(now);
       setIsRunning(true);
@@ -254,11 +324,22 @@ export function TaskStopwatchModal({
   };
 
   const handleReset = () => {
+    if (!confirmReset) {
+      setConfirmReset(true);
+      return;
+    }
+    setConfirmReset(false);
     const now = Date.now();
     setAccumulatedSeconds(0);
     setStartedAt(isRunning ? now : null);
     setNowTick(now);
     hasNotifiedRef.current = false;
+    clearPersistedTimer();
+    if (onResetProgress) {
+      onResetProgress(pillar, task.id);
+    } else {
+      onUpdateFocusMinutes(pillar, task.id, 0, 0);
+    }
   };
 
   const handleFinish = () => {
@@ -272,14 +353,19 @@ export function TaskStopwatchModal({
   };
 
   const handleSaveProgressAndClose = () => {
+    const now = Date.now();
+    const finalElapsed = isRunning && startedAt
+      ? accumulatedSeconds + Math.max(0, (now - startedAt) / 1000)
+      : accumulatedSeconds;
+    const finalElapsedInt = Math.floor(finalElapsed);
+
     clearPersistedTimer();
     if (pipWindow && !pipWindow.closed) {
       pipWindow.close();
     }
-    const elapsedMinutes = Math.round(secondsElapsed / 60);
-    if (elapsedMinutes > 0) {
-      onUpdateFocusMinutes(pillar, task.id, elapsedMinutes);
-    }
+
+    // Stop timer and save elapsed seconds to task progress
+    saveCurrentProgress(finalElapsedInt);
     onClose();
   };
 
@@ -573,10 +659,14 @@ export function TaskStopwatchModal({
             <button
               type="button"
               onClick={handleReset}
-              className="grid size-11 place-items-center rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-              title="Reset timer"
+              className={cn(
+                "h-11 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all cursor-pointer flex items-center justify-center gap-1.5 px-3 text-xs font-mono",
+                confirmReset && "border-red-500/60 bg-red-500/20 text-red-300 hover:bg-red-500/30",
+              )}
+              title={confirmReset ? "Click again to confirm reset" : "Reset progress"}
             >
-              <RotateCcw className="size-4" />
+              <RotateCcw className="size-4 shrink-0" />
+              {confirmReset ? <span>Confirm Reset</span> : (secondsElapsed > 0 && <span className="hidden sm:inline">Reset</span>)}
             </button>
 
             <button

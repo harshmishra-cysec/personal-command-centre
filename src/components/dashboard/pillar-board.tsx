@@ -118,6 +118,19 @@ export function PillarBoard({
         {sortedTasks.map((task) => {
           const critical = task.priority === "critical";
           const durationStr = formatDuration(task.durationMinutes || 45);
+          const hasSavedProgress =
+            !task.done && typeof task.timerElapsedSeconds === "number" && task.timerElapsedSeconds > 0;
+          const elapsedMins = hasSavedProgress
+            ? Math.round(task.timerElapsedSeconds! / 60)
+            : 0;
+          const totalDurationMins = task.durationMinutes || 45;
+          const remainingMins = Math.max(0, totalDurationMins - elapsedMins);
+          const progressPercent = hasSavedProgress
+            ? Math.min(100, Math.max(0, (task.timerElapsedSeconds! / (totalDurationMins * 60)) * 100))
+            : 0;
+          const playButtonTitle = hasSavedProgress
+            ? `Resume (${remainingMins}m left)`
+            : "Start timer";
 
           return (
             <li key={task.id}>
@@ -190,13 +203,29 @@ export function PillarBoard({
                             onStartTimer(board.id, task);
                           }}
                           className="grid size-6 place-items-center rounded border border-cyan-400/40 bg-cyan-950/40 text-cyan-400 hover:bg-cyan-400 hover:text-black hover:shadow-[0_0_12px_rgba(0,229,255,0.6)] transition-all cursor-pointer"
-                          title="Start timer"
+                          title={playButtonTitle}
                         >
                           <Play className="size-3 fill-current ml-0.5" />
                         </button>
                       )}
                     </div>
                   </div>
+
+                  {/* Saved focus-timer progress bar and label for unfinished task */}
+                  {hasSavedProgress && (
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center justify-between font-mono text-[10px] text-cyan-300/90">
+                        <span>{elapsedMins}m / {totalDurationMins}m</span>
+                        <span>{Math.round(progressPercent)}%</span>
+                      </div>
+                      <div className="h-1 w-full overflow-hidden rounded-full bg-white/10">
+                        <div
+                          className="h-full rounded-full bg-cyan-400 transition-all duration-300"
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   {task.description && (
                     <p
