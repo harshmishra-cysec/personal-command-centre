@@ -101,8 +101,19 @@ export function MilestoneNodeCard({
     }
   };
 
-  const completedSubTasks = node.subTasks ? node.subTasks.filter((s) => s.completed).length : 0;
-  const totalSubTasks = node.subTasks ? node.subTasks.length : 0;
+  let completedSubTasks = 0;
+  let totalSubTasks = 0;
+  if (node.subTasks) {
+    for (const st of node.subTasks) {
+      if (st.subItems && st.subItems.length > 0) {
+        totalSubTasks += st.subItems.length;
+        completedSubTasks += st.subItems.filter((s) => s.completed).length;
+      } else {
+        totalSubTasks += 1;
+        if (st.completed) completedSubTasks += 1;
+      }
+    }
+  }
 
   return (
     <div className="relative flex items-stretch gap-3 sm:gap-5 group">

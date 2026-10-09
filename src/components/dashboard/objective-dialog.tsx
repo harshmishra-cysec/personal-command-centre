@@ -22,6 +22,8 @@ import {
   loadRoadmaps,
   pillarToTrackId,
   type RoadmapNode,
+  type RoadmapSubTask,
+  type RoadmapSubItem,
   type TrackRoadmap,
   type TrackId,
 } from "@/lib/roadmap-data";
@@ -120,21 +122,80 @@ export function ObjectiveDialog({
     return ids;
   }, [allActiveTasks, initialTask]);
 
-  // Available uncompleted checklist items for selected node
-  const availableChecklistItems = useMemo(() => {
+  // Available uncompleted checklist items and sub-items for selected node
+  type SelectableOption =
+    | { type: "item"; item: RoadmapSubTask }
+    | {
+        type: "item_with_subs";
+        item: RoadmapSubTask;
+        subItems: RoadmapSubItem[];
+      };
+
+  const selectableOptions = useMemo<SelectableOption[]>(() => {
     if (!selectedNode?.subTasks) return [];
-    return selectedNode.subTasks.filter((item) => {
-      // If editing this specific task, allow its currently selected checklist item
-      if (initialTask && item.id === initialTask.checklist_item_id) {
-        return true;
+    const result: SelectableOption[] = [];
+
+    for (const item of selectedNode.subTasks) {
+      if (item.subItems && item.subItems.length > 0) {
+        const availableSubs = item.subItems.filter((si) => {
+          if (initialTask && si.id === initialTask.checklist_item_id) return true;
+          if (si.completed) return false;
+          if (activeTaskChecklistIds.has(si.id)) return false;
+          return true;
+        });
+
+        const parentAllowed =
+          (initialTask && item.id === initialTask.checklist_item_id) ||
+          (!item.completed && !activeTaskChecklistIds.has(item.id));
+
+        if (availableSubs.length > 0 || parentAllowed) {
+          result.push({
+            type: "item_with_subs",
+            item,
+            subItems: availableSubs,
+          });
+        }
+      } else {
+        const isAllowed =
+          (initialTask && item.id === initialTask.checklist_item_id) ||
+          (!item.completed && !activeTaskChecklistIds.has(item.id));
+
+        if (isAllowed) {
+          result.push({
+            type: "item",
+            item,
+          });
+        }
       }
-      // Must not be completed in roadmap
-      if (item.completed) return false;
-      // Must not already be present in active Today tasks
-      if (activeTaskChecklistIds.has(item.id)) return false;
-      return true;
-    });
+    }
+
+    return result;
   }, [selectedNode, initialTask, activeTaskChecklistIds]);
+
+  const totalSelectableCount = useMemo(() => {
+    return selectableOptions.reduce((acc, opt) => {
+      if (opt.type === "item_with_subs") {
+        return acc + opt.subItems.length + 1;
+      }
+      return acc + 1;
+    }, 0);
+  }, [selectableOptions]);
+
+  const linkedItemLabel = useMemo(() => {
+    if (!selectedNode?.subTasks || !selectedChecklistItemId) return null;
+    for (const st of selectedNode.subTasks) {
+      if (st.id === selectedChecklistItemId) {
+        return st.title;
+      }
+      if (st.subItems) {
+        const sub = st.subItems.find((s) => s.id === selectedChecklistItemId);
+        if (sub) {
+          return `${st.title} ↳ ${sub.title}`;
+        }
+      }
+    }
+    return null;
+  }, [selectedNode, selectedChecklistItemId]);
 
   useEffect(() => {
     if (!open) return;
@@ -169,18 +230,32 @@ export function ObjectiveDialog({
     setSelectedChecklistItemId("");
   };
 
-  // When a checklist item is selected, populate title and attach node_id & checklist_item_id
+  // When a checklist item or sub-item is selected, populate title and attach node_id & checklist_item_id
   const handleChecklistItemSelect = (itemId: string) => {
     setSelectedChecklistItemId(itemId);
-    if (!itemId) return;
+    if (!itemId || !selectedNode?.subTasks) return;
 
-    const item = selectedNode?.subTasks?.find((st) => st.id === itemId);
-    if (item) {
-      setTitle(item.title);
-      if (tag === "STUDY") {
-        if (pillar === "cyber") setTag("LAB");
-        else if (pillar === "gold") setTag("CLASS");
-        else setTag("BUILD");
+    for (const st of selectedNode.subTasks) {
+      if (st.subItems) {
+        const sub = st.subItems.find((s) => s.id === itemId);
+        if (sub) {
+          setTitle(sub.title);
+          if (tag === "STUDY") {
+            if (pillar === "cyber") setTag("LAB");
+            else if (pillar === "gold") setTag("CLASS");
+            else setTag("BUILD");
+          }
+          return;
+        }
+      }
+      if (st.id === itemId) {
+        setTitle(st.title);
+        if (tag === "STUDY") {
+          if (pillar === "cyber") setTag("LAB");
+          else if (pillar === "gold") setTag("CLASS");
+          else setTag("BUILD");
+        }
+        return;
       }
     }
   };
@@ -297,12 +372,22 @@ export function ObjectiveDialog({
                 >
                   <option value="">-- No milestone linked --</option>
                   {activeMilestoneNodes.map((node) => {
-                    const uncompletedCount = (node.subTasks || []).filter(
-                      (st) => !st.completed && !activeTaskChecklistIds.has(st.id),
-                    ).length;
+                    const uncompletedCount = (node.subTasks || []).reduce((sum, st) => {
+                      if (st.subItems && st.subItems.length > 0) {
+                        return (
+                          sum +
+                          st.subItems.filter(
+                            (si) => !si.completed && !activeTaskChecklistIds.has(si.id),
+                          ).length
+                        );
+                      }
+                      return (
+                        sum + (!st.completed && !activeTaskChecklistIds.has(st.id) ? 1 : 0)
+                      );
+                    }, 0);
                     return (
                       <option key={node.id} value={node.id}>
-                        [{node.sequence}] {node.title} ({uncompletedCount} available)
+                        {node.sequence}. {node.title} ({uncompletedCount} available)
                       </option>
                     );
                   })}
@@ -322,14 +407,14 @@ export function ObjectiveDialog({
                     <ListCheck className="size-3 text-cyan-400" />
                     2. SELECT CHECKLIST ITEM
                   </span>
-                  {availableChecklistItems.length === 0 && (
+                  {totalSelectableCount === 0 && (
                     <span className="text-amber-400 text-[10px]">
                       All items completed or in queue
                     </span>
                   )}
                 </label>
 
-                {availableChecklistItems.length > 0 ? (
+                {totalSelectableCount > 0 ? (
                   <div className="relative">
                     <select
                       id="roadmap-item-select"
@@ -341,11 +426,27 @@ export function ObjectiveDialog({
                       )}
                     >
                       <option value="">-- Select an item to fill in title --</option>
-                      {availableChecklistItems.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.title}
-                        </option>
-                      ))}
+                      {selectableOptions.map((opt) => {
+                        if (opt.type === "item_with_subs") {
+                          return (
+                            <optgroup key={opt.item.id} label={opt.item.title}>
+                              <option value={opt.item.id}>
+                                {opt.item.title} (Entire checklist item)
+                              </option>
+                              {opt.subItems.map((sub) => (
+                                <option key={sub.id} value={sub.id}>
+                                  ↳ {sub.title}
+                                </option>
+                              ))}
+                            </optgroup>
+                          );
+                        }
+                        return (
+                          <option key={opt.item.id} value={opt.item.id}>
+                            {opt.item.title}
+                          </option>
+                        );
+                      })}
                     </select>
                     <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                   </div>
@@ -358,16 +459,23 @@ export function ObjectiveDialog({
 
                 {selectedChecklistItemId && (
                   <div className="flex items-center justify-between pt-1 text-[11px] font-mono text-emerald-400">
-                    <span className="flex items-center gap-1">
-                      <CheckCircle2 className="size-3" />
-                      Linked to roadmap checklist
+                    <span
+                      className="flex items-center gap-1 truncate max-w-[80%]"
+                      title={linkedItemLabel || undefined}
+                    >
+                      <CheckCircle2 className="size-3 shrink-0" />
+                      <span className="truncate">
+                        {linkedItemLabel
+                          ? `Linked: ${linkedItemLabel}`
+                          : "Linked to roadmap checklist"}
+                      </span>
                     </span>
                     <button
                       type="button"
                       onClick={() => {
                         setSelectedChecklistItemId("");
                       }}
-                      className="text-muted-foreground hover:text-foreground text-[10px] underline cursor-pointer"
+                      className="text-muted-foreground hover:text-foreground text-[10px] underline cursor-pointer shrink-0"
                     >
                       Unlink
                     </button>

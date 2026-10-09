@@ -13,8 +13,14 @@ import {
   type NodeStatus,
   type RoadmapNode,
   type RoadmapSubTask,
+  type RoadmapSubItem,
   type TrackId,
 } from "@/lib/roadmap-data";
+
+interface ChecklistDraftItem {
+  title: string;
+  subItems: string[];
+}
 
 interface AddMilestoneModalProps {
   open: boolean;
@@ -39,37 +45,77 @@ export function AddMilestoneModal({
   const [status, setStatus] = useState<NodeStatus>("active");
   const [tagInput, setTagInput] = useState("");
   const [estimatedHours, setEstimatedHours] = useState<number>(40);
-  const [subTasks, setSubTasks] = useState<string[]>(["", ""]);
+  const [checklistItems, setChecklistItems] = useState<ChecklistDraftItem[]>([
+    { title: "", subItems: [] },
+    { title: "", subItems: [] },
+  ]);
 
-  const handleSubTaskChange = (index: number, value: string) => {
-    const next = [...subTasks];
-    next[index] = value;
-    setSubTasks(next);
+  const handleItemTitleChange = (index: number, value: string) => {
+    const next = [...checklistItems];
+    next[index] = { ...next[index], title: value };
+    setChecklistItems(next);
   };
 
-  const handleAddSubTaskField = () => {
-    setSubTasks([...subTasks, ""]);
+  const handleAddItem = () => {
+    setChecklistItems([...checklistItems, { title: "", subItems: [] }]);
   };
 
-  const handleRemoveSubTaskField = (index: number) => {
-    if (subTasks.length === 1) {
-      setSubTasks([""]);
+  const handleRemoveItem = (index: number) => {
+    if (checklistItems.length === 1) {
+      setChecklistItems([{ title: "", subItems: [] }]);
       return;
     }
-    setSubTasks(subTasks.filter((_, i) => i !== index));
+    setChecklistItems(checklistItems.filter((_, i) => i !== index));
+  };
+
+  const handleAddSubItem = (itemIndex: number) => {
+    const next = [...checklistItems];
+    next[itemIndex] = {
+      ...next[itemIndex],
+      subItems: [...next[itemIndex].subItems, ""],
+    };
+    setChecklistItems(next);
+  };
+
+  const handleSubItemChange = (itemIndex: number, subIndex: number, value: string) => {
+    const next = [...checklistItems];
+    const updatedSubs = [...next[itemIndex].subItems];
+    updatedSubs[subIndex] = value;
+    next[itemIndex] = { ...next[itemIndex], subItems: updatedSubs };
+    setChecklistItems(next);
+  };
+
+  const handleRemoveSubItem = (itemIndex: number, subIndex: number) => {
+    const next = [...checklistItems];
+    next[itemIndex] = {
+      ...next[itemIndex],
+      subItems: next[itemIndex].subItems.filter((_, j) => j !== subIndex),
+    };
+    setChecklistItems(next);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
-    const parsedSubTasks: RoadmapSubTask[] = subTasks
-      .filter((st) => st.trim().length > 0)
-      .map((st, i) => ({
-        id: `st-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
-        title: st.trim(),
-        completed: status === "completed",
-      }));
+    const parsedSubTasks: RoadmapSubTask[] = checklistItems
+      .filter((item) => item.title.trim().length > 0)
+      .map((item, i) => {
+        const validSubs: RoadmapSubItem[] = item.subItems
+          .filter((si) => si.trim().length > 0)
+          .map((si, j) => ({
+            id: `si-${Date.now()}-${i}-${j}-${Math.random().toString(36).slice(2, 6)}`,
+            title: si.trim(),
+            completed: status === "completed",
+          }));
+
+        return {
+          id: `st-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
+          title: item.title.trim(),
+          completed: status === "completed",
+          ...(validSubs.length > 0 ? { subItems: validSubs } : {}),
+        };
+      });
 
     const parsedTags = tagInput
       .split(",")
@@ -80,10 +126,10 @@ export function AddMilestoneModal({
       id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       sequence: sequence.trim() || nextSeq,
       title: title.trim(),
-      description: description.trim() || "Tactical milestone objective parameters pending...",
+      description: description.trim() || "Milestone parameters pending...",
       trackId: trackId,
       status: status,
-      tags: parsedTags.length > 0 ? parsedTags : ["TACTICAL", "PATH"],
+      tags: parsedTags.length > 0 ? parsedTags : ["PATH"],
       estimatedHours: Number(estimatedHours) || 40,
       subTasks: parsedSubTasks,
     };
@@ -95,7 +141,10 @@ export function AddMilestoneModal({
     setTitle("");
     setDescription("");
     setTagInput("");
-    setSubTasks(["", ""]);
+    setChecklistItems([
+      { title: "", subItems: [] },
+      { title: "", subItems: [] },
+    ]);
   };
 
   return (
@@ -241,11 +290,11 @@ export function AddMilestoneModal({
           <div className="space-y-2 rounded-lg border border-white/10 bg-[#0B0F17] p-3">
             <div className="flex items-center justify-between">
               <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                Direct Action Items / Checklist
+                Action items and checklist
               </label>
               <button
                 type="button"
-                onClick={handleAddSubTaskField}
+                onClick={handleAddItem}
                 className="flex items-center gap-1 font-mono text-[10px] text-primary hover:underline"
               >
                 <Plus className="size-3" />
@@ -253,26 +302,63 @@ export function AddMilestoneModal({
               </button>
             </div>
 
-            <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
-              {subTasks.map((st, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className="font-mono text-[10px] text-muted-foreground w-4 text-right">
-                    {i + 1}.
-                  </span>
-                  <input
-                    type="text"
-                    value={st}
-                    onChange={(e) => handleSubTaskChange(i, e.target.value)}
-                    placeholder={`Checklist item #${i + 1}`}
-                    className="flex-1 rounded border border-white/10 bg-[#131B2A] px-2.5 py-1.5 font-mono text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveSubTaskField(i)}
-                    className="text-muted-foreground hover:text-red-400 p-1"
-                  >
-                    <Trash2 className="size-3" />
-                  </button>
+            <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
+              {checklistItems.map((item, i) => (
+                <div key={i} className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] text-muted-foreground w-4 text-right">
+                      {i + 1}.
+                    </span>
+                    <input
+                      type="text"
+                      value={item.title}
+                      onChange={(e) => handleItemTitleChange(i, e.target.value)}
+                      placeholder={`Checklist item ${i + 1}`}
+                      className="flex-1 rounded border border-white/10 bg-[#131B2A] px-2.5 py-1.5 font-mono text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleAddSubItem(i)}
+                      title="Add sub-task"
+                      className="flex items-center gap-0.5 rounded border border-white/10 bg-white/5 px-1.5 py-1 font-mono text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <Plus className="size-2.5" />
+                      <span>Sub-task</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveItem(i)}
+                      className="text-muted-foreground hover:text-red-400 p-1"
+                    >
+                      <Trash2 className="size-3" />
+                    </button>
+                  </div>
+
+                  {item.subItems.length > 0 && (
+                    <div className="ml-6 space-y-1.5 border-l border-white/10 pl-3">
+                      {item.subItems.map((si, j) => (
+                        <div key={j} className="flex items-center gap-2">
+                          <span className="font-mono text-[9px] text-muted-foreground/70">
+                            ↳
+                          </span>
+                          <input
+                            type="text"
+                            value={si}
+                            onChange={(e) => handleSubItemChange(i, j, e.target.value)}
+                            placeholder={`Sub-task ${j + 1}`}
+                            className="flex-1 rounded border border-white/10 bg-[#101725] px-2 py-1 font-mono text-[11px] text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSubItem(i, j)}
+                            className="text-muted-foreground/60 hover:text-red-400 p-0.5"
+                          >
+                            <Trash2 className="size-2.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

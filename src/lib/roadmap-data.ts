@@ -1,10 +1,17 @@
 export type TrackId = "cyber" | "academics" | "aiml";
 export type NodeStatus = "completed" | "active" | "locked";
 
+export interface RoadmapSubItem {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
 export interface RoadmapSubTask {
   id: string;
   title: string;
   completed: boolean;
+  subItems?: RoadmapSubItem[];
 }
 
 export interface RoadmapNode {
@@ -96,18 +103,42 @@ export function calculateNodeProgress(node: RoadmapNode): number {
   if (!node.subTasks || node.subTasks.length === 0) {
     return node.status === "completed" ? 100 : 0;
   }
-  const completed = node.subTasks.filter((st) => st.completed).length;
-  return Math.round((completed / node.subTasks.length) * 100);
+  let total = 0;
+  let completed = 0;
+  for (const st of node.subTasks) {
+    if (st.subItems && st.subItems.length > 0) {
+      total += st.subItems.length;
+      completed += st.subItems.filter((si) => si.completed).length;
+    } else {
+      total += 1;
+      if (st.completed) completed += 1;
+    }
+  }
+  if (total === 0) return node.status === "completed" ? 100 : 0;
+  return Math.round((completed / total) * 100);
 }
 
 export function calculateTrackProgress(nodes: RoadmapNode[]): number {
   if (nodes.length === 0) return 0;
-  const totalSubTasks = nodes.reduce((sum, n) => sum + (n.subTasks.length || 1), 0);
-  const completedSubTasks = nodes.reduce((sum, n) => {
-    if (n.subTasks.length === 0) return sum + (n.status === "completed" ? 1 : 0);
-    return sum + n.subTasks.filter((st) => st.completed).length;
-  }, 0);
-  return totalSubTasks > 0 ? Math.round((completedSubTasks / totalSubTasks) * 100) : 0;
+  let total = 0;
+  let completed = 0;
+  for (const n of nodes) {
+    if (!n.subTasks || n.subTasks.length === 0) {
+      total += 1;
+      if (n.status === "completed") completed += 1;
+    } else {
+      for (const st of n.subTasks) {
+        if (st.subItems && st.subItems.length > 0) {
+          total += st.subItems.length;
+          completed += st.subItems.filter((si) => si.completed).length;
+        } else {
+          total += 1;
+          if (st.completed) completed += 1;
+        }
+      }
+    }
+  }
+  return total > 0 ? Math.round((completed / total) * 100) : 0;
 }
 
 export function pillarToTrackId(pillar: "cyber" | "gold" | "emerald"): TrackId {
@@ -123,13 +154,14 @@ export function trackIdToPillar(trackId: TrackId): "cyber" | "gold" | "emerald" 
 }
 
 /**
- * Updates a roadmap checklist item's completion status, recalculates the parent node's
+ * Updates a roadmap checklist item or sub-item completion status, recalculates the parent node's
  * status and progress, persists to localStorage, and dispatches the update event for live UI sync.
  */
 export function setRoadmapChecklistItemCompletion(
   nodeId: string,
   checklistItemId: string,
   completed: boolean,
+  subItemId?: string,
 ): { updatedTrackId: TrackId; updatedNodes: RoadmapNode[] } | null {
   const roadmaps = loadRoadmaps();
   let affectedTrackId: TrackId | null = null;
@@ -143,9 +175,49 @@ export function setRoadmapChecklistItemCompletion(
     if (nodeIndex !== -1) {
       affectedTrackId = tid;
       const targetNode = track.nodes[nodeIndex];
-      const subTasks = (targetNode.subTasks || []).map((st) =>
-        st.id === checklistItemId ? { ...st, completed } : st,
-      );
+      const subTasks = (targetNode.subTasks || []).map((st) => {
+        // Case A: subItemId explicitly provided
+        if (subItemId && st.id === checklistItemId && st.subItems) {
+          const updatedSubItems = st.subItems.map((si) =>
+            si.id === subItemId ? { ...si, completed } : si,
+          );
+          const allSubsDone =
+            updatedSubItems.length > 0 && updatedSubItems.every((si) => si.completed);
+          return {
+            ...st,
+            subItems: updatedSubItems,
+            completed: allSubsDone,
+          };
+        }
+
+        // Case B: checklistItemId matches a sub-item inside this st
+        if (st.subItems && st.subItems.some((si) => si.id === checklistItemId)) {
+          const updatedSubItems = st.subItems.map((si) =>
+            si.id === checklistItemId ? { ...si, completed } : si,
+          );
+          const allSubsDone =
+            updatedSubItems.length > 0 && updatedSubItems.every((si) => si.completed);
+          return {
+            ...st,
+            subItems: updatedSubItems,
+            completed: allSubsDone,
+          };
+        }
+
+        // Case C: checklistItemId matches this parent st
+        if (st.id === checklistItemId) {
+          const updatedSubItems = st.subItems
+            ? st.subItems.map((si) => ({ ...si, completed }))
+            : undefined;
+          return {
+            ...st,
+            completed,
+            ...(updatedSubItems ? { subItems: updatedSubItems } : {}),
+          };
+        }
+
+        return st;
+      });
 
       const allCompleted = subTasks.length > 0 && subTasks.every((st) => st.completed);
       let newStatus: NodeStatus = targetNode.status;

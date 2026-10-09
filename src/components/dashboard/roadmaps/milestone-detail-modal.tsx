@@ -27,6 +27,7 @@ import {
   type NodeStatus,
   type RoadmapNode,
   type RoadmapSubTask,
+  type RoadmapSubItem,
   type TrackId,
 } from "@/lib/roadmap-data";
 
@@ -54,6 +55,8 @@ export function MilestoneDetailModal({
   const [status, setStatus] = useState<NodeStatus>("active");
   const [subTasks, setSubTasks] = useState<RoadmapSubTask[]>([]);
   const [newSubTaskTitle, setNewSubTaskTitle] = useState("");
+  const [activeAddSubItemForId, setActiveAddSubItemForId] = useState<string | null>(null);
+  const [newSubItemTitle, setNewSubItemTitle] = useState("");
   const [isEditingMeta, setIsEditingMeta] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -69,6 +72,8 @@ export function MilestoneDetailModal({
       setSubTasks(node.subTasks || []);
       setIsEditingMeta(false);
       setConfirmDelete(false);
+      setActiveAddSubItemForId(null);
+      setNewSubItemTitle("");
     }
   }, [node, open]);
 
@@ -109,19 +114,81 @@ export function MilestoneDetailModal({
 
   const styles = getAccentStyles();
 
-  // Calculate live progress from local subTasks
-  const completedSubTasksCount = subTasks.filter((st) => st.completed).length;
+  // Calculate live progress from local subTasks (leaf items)
+  let totalLeafItems = 0;
+  let completedLeafItems = 0;
+  for (const st of subTasks) {
+    if (st.subItems && st.subItems.length > 0) {
+      totalLeafItems += st.subItems.length;
+      completedLeafItems += st.subItems.filter((s) => s.completed).length;
+    } else {
+      totalLeafItems += 1;
+      if (st.completed) completedLeafItems += 1;
+    }
+  }
+
   const progress =
-    subTasks.length > 0
-      ? Math.round((completedSubTasksCount / subTasks.length) * 100)
+    totalLeafItems > 0
+      ? Math.round((completedLeafItems / totalLeafItems) * 100)
       : status === "completed"
         ? 100
         : 0;
 
   const handleToggleSubTask = (subTaskId: string) => {
-    const updatedSubTasks = subTasks.map((st) =>
-      st.id === subTaskId ? { ...st, completed: !st.completed } : st,
-    );
+    const updatedSubTasks = subTasks.map((st) => {
+      if (st.id === subTaskId) {
+        const nextDone = !st.completed;
+        const updatedSubs = st.subItems
+          ? st.subItems.map((si) => ({ ...si, completed: nextDone }))
+          : undefined;
+        return {
+          ...st,
+          completed: nextDone,
+          ...(updatedSubs ? { subItems: updatedSubs } : {}),
+        };
+      }
+      return st;
+    });
+    setSubTasks(updatedSubTasks);
+
+    const allDone = updatedSubTasks.length > 0 && updatedSubTasks.every((st) => st.completed);
+    let newStatus = status;
+    if (allDone) {
+      newStatus = "completed";
+      setStatus("completed");
+    } else if (status === "completed" && !allDone) {
+      newStatus = "active";
+      setStatus("active");
+    }
+
+    const updatedNode: RoadmapNode = {
+      ...node,
+      title,
+      description,
+      sequence,
+      estimatedHours,
+      subTasks: updatedSubTasks,
+      status: newStatus,
+    };
+    onUpdateNode(updatedNode);
+  };
+
+  const handleToggleSubItem = (parentSubTaskId: string, subItemId: string) => {
+    const updatedSubTasks = subTasks.map((st) => {
+      if (st.id === parentSubTaskId && st.subItems) {
+        const updatedSubs = st.subItems.map((si) =>
+          si.id === subItemId ? { ...si, completed: !si.completed } : si,
+        );
+        const allSubsDone =
+          updatedSubs.length > 0 && updatedSubs.every((si) => si.completed);
+        return {
+          ...st,
+          subItems: updatedSubs,
+          completed: allSubsDone,
+        };
+      }
+      return st;
+    });
     setSubTasks(updatedSubTasks);
 
     const allDone = updatedSubTasks.length > 0 && updatedSubTasks.every((st) => st.completed);
@@ -172,6 +239,77 @@ export function MilestoneDetailModal({
     onUpdateNode(updatedNode);
   };
 
+  const handleAddSubItemSubmit = (parentSubTaskId: string, e: React.FormEvent) => {
+    e.preventDefault();
+    const titleVal = newSubItemTitle.trim();
+    if (!titleVal) return;
+
+    const newSub: RoadmapSubItem = {
+      id: `si-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      title: titleVal,
+      completed: false,
+    };
+
+    const updatedSubTasks = subTasks.map((st) => {
+      if (st.id === parentSubTaskId) {
+        const currentSubs = st.subItems || [];
+        return {
+          ...st,
+          subItems: [...currentSubs, newSub],
+          completed: false,
+        };
+      }
+      return st;
+    });
+
+    setSubTasks(updatedSubTasks);
+    setNewSubItemTitle("");
+    setActiveAddSubItemForId(null);
+
+    const updatedNode: RoadmapNode = {
+      ...node,
+      title,
+      description,
+      sequence,
+      estimatedHours,
+      subTasks: updatedSubTasks,
+      status: status === "completed" ? "active" : status,
+    };
+    onUpdateNode(updatedNode);
+  };
+
+  const handleDeleteSubItem = (parentSubTaskId: string, subItemId: string) => {
+    const updatedSubTasks = subTasks.map((st) => {
+      if (st.id === parentSubTaskId && st.subItems) {
+        const nextSubs = st.subItems.filter((si) => si.id !== subItemId);
+        const allSubsDone =
+          nextSubs.length > 0 && nextSubs.every((si) => si.completed);
+        return {
+          ...st,
+          subItems: nextSubs.length > 0 ? nextSubs : undefined,
+          completed: nextSubs.length > 0 ? allSubsDone : st.completed,
+        };
+      }
+      return st;
+    });
+
+    setSubTasks(updatedSubTasks);
+
+    const allDone = updatedSubTasks.length > 0 && updatedSubTasks.every((st) => st.completed);
+    const newStatus = allDone ? "completed" : status;
+
+    const updatedNode: RoadmapNode = {
+      ...node,
+      title,
+      description,
+      sequence,
+      estimatedHours,
+      subTasks: updatedSubTasks,
+      status: newStatus,
+    };
+    onUpdateNode(updatedNode);
+  };
+
   const handleDeleteSubTask = (subTaskId: string) => {
     const updatedSubTasks = subTasks.filter((st) => st.id !== subTaskId);
     setSubTasks(updatedSubTasks);
@@ -195,7 +333,13 @@ export function MilestoneDetailModal({
     setStatus(newStatus);
     let updatedSubTasks = [...subTasks];
     if (newStatus === "completed") {
-      updatedSubTasks = updatedSubTasks.map((st) => ({ ...st, completed: true }));
+      updatedSubTasks = updatedSubTasks.map((st) => ({
+        ...st,
+        completed: true,
+        ...(st.subItems
+          ? { subItems: st.subItems.map((si) => ({ ...si, completed: true })) }
+          : {}),
+      }));
       setSubTasks(updatedSubTasks);
     }
 
@@ -451,7 +595,7 @@ export function MilestoneDetailModal({
                   Checklist
                 </span>
                 <span className="rounded bg-white/10 px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
-                  {completedSubTasksCount} of {subTasks.length} completed
+                  {completedLeafItems} of {totalLeafItems} completed
                 </span>
               </div>
               <span className={cn("font-mono text-xs font-bold", styles.text)}>{progress}%</span>
@@ -472,46 +616,150 @@ export function MilestoneDetailModal({
                   No checklist items yet. Add one below to track progress.
                 </div>
               ) : (
-                subTasks.map((subTask) => (
-                  <div
-                    key={subTask.id}
-                    className={cn(
-                      "group flex items-start gap-3 rounded-lg border p-2.5 transition-all",
-                      subTask.completed
-                        ? "border-white/5 bg-white/5 text-muted-foreground"
-                        : "border-white/10 bg-[#131B2A] hover:border-white/20 text-foreground",
-                    )}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => handleToggleSubTask(subTask.id)}
-                      className="mt-0.5 flex-shrink-0 cursor-pointer text-primary transition-transform active:scale-95"
-                    >
-                      {subTask.completed ? (
-                        <CheckSquare className="size-4 text-emerald" />
-                      ) : (
-                        <Square className="size-4 text-muted-foreground group-hover:text-primary" />
-                      )}
-                    </button>
-                    <span
-                      onClick={() => handleToggleSubTask(subTask.id)}
+                subTasks.map((subTask) => {
+                  const hasSubItems = Boolean(subTask.subItems && subTask.subItems.length > 0);
+                  const isAddingSub = activeAddSubItemForId === subTask.id;
+                  const subsCompleted = subTask.subItems
+                    ? subTask.subItems.filter((s) => s.completed).length
+                    : 0;
+
+                  return (
+                    <div
+                      key={subTask.id}
                       className={cn(
-                        "flex-1 text-xs cursor-pointer select-none leading-relaxed",
-                        subTask.completed && "line-through text-muted-foreground",
+                        "group rounded-lg border p-2.5 transition-all space-y-2",
+                        subTask.completed
+                          ? "border-white/5 bg-white/5 text-muted-foreground"
+                          : "border-white/10 bg-[#131B2A] hover:border-white/20 text-foreground",
                       )}
                     >
-                      {subTask.title}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteSubTask(subTask.id)}
-                      className="text-muted-foreground/60 hover:text-red-400 p-1 transition-colors"
-                      title="Remove checklist item"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
-                  </div>
-                ))
+                      <div className="flex items-start gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSubTask(subTask.id)}
+                          className="mt-0.5 flex-shrink-0 cursor-pointer text-primary transition-transform active:scale-95"
+                        >
+                          {subTask.completed ? (
+                            <CheckSquare className="size-4 text-emerald" />
+                          ) : (
+                            <Square className="size-4 text-muted-foreground group-hover:text-primary" />
+                          )}
+                        </button>
+                        <span
+                          onClick={() => handleToggleSubTask(subTask.id)}
+                          className={cn(
+                            "flex-1 text-xs cursor-pointer select-none leading-relaxed flex items-center gap-2",
+                            subTask.completed && "line-through text-muted-foreground",
+                          )}
+                        >
+                          <span>{subTask.title}</span>
+                          {hasSubItems && (
+                            <span className="font-mono text-[10px] text-muted-foreground">
+                              ({subsCompleted}/{subTask.subItems!.length})
+                            </span>
+                          )}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveAddSubItemForId(
+                              isAddingSub ? null : subTask.id,
+                            );
+                            setNewSubItemTitle("");
+                          }}
+                          className="flex items-center gap-0.5 rounded border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                          title="Add sub-task"
+                        >
+                          <Plus className="size-2.5" />
+                          <span>Sub-task</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSubTask(subTask.id)}
+                          className="text-muted-foreground/60 hover:text-red-400 p-1 transition-colors"
+                          title="Remove checklist item"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Sub-items list */}
+                      {hasSubItems && (
+                        <div className="ml-7 space-y-1.5 border-l border-white/10 pl-3">
+                          {subTask.subItems!.map((si) => (
+                            <div
+                              key={si.id}
+                              className="group/sub flex items-center gap-2 rounded px-1.5 py-1 hover:bg-white/5 transition-colors"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => handleToggleSubItem(subTask.id, si.id)}
+                                className="cursor-pointer text-primary transition-transform active:scale-95"
+                              >
+                                {si.completed ? (
+                                  <CheckSquare className="size-3.5 text-emerald" />
+                                ) : (
+                                  <Square className="size-3.5 text-muted-foreground hover:text-primary" />
+                                )}
+                              </button>
+                              <span
+                                onClick={() => handleToggleSubItem(subTask.id, si.id)}
+                                className={cn(
+                                  "flex-1 text-[11px] cursor-pointer select-none leading-snug",
+                                  si.completed && "line-through text-muted-foreground",
+                                )}
+                              >
+                                {si.title}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSubItem(subTask.id, si.id)}
+                                className="opacity-0 group-hover/sub:opacity-100 text-muted-foreground/60 hover:text-red-400 p-0.5 transition-opacity"
+                                title="Remove sub-task"
+                              >
+                                <Trash2 className="size-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Add sub-item inline form */}
+                      {isAddingSub && (
+                        <form
+                          onSubmit={(e) => handleAddSubItemSubmit(subTask.id, e)}
+                          className="ml-7 flex items-center gap-2 border-l border-white/10 pl-3 pt-1"
+                        >
+                          <input
+                            type="text"
+                            value={newSubItemTitle}
+                            onChange={(e) => setNewSubItemTitle(e.target.value)}
+                            placeholder="New sub-task title..."
+                            autoFocus
+                            className="flex-1 rounded border border-white/15 bg-[#101725] px-2.5 py-1 font-mono text-[11px] text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none"
+                          />
+                          <button
+                            type="submit"
+                            disabled={!newSubItemTitle.trim()}
+                            className="rounded bg-primary px-2.5 py-1 font-mono text-[10px] font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
+                          >
+                            ADD
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveAddSubItemForId(null);
+                              setNewSubItemTitle("");
+                            }}
+                            className="rounded border border-white/10 px-2 py-1 font-mono text-[10px] text-muted-foreground hover:text-foreground"
+                          >
+                            CANCEL
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
 
