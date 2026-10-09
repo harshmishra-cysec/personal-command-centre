@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   Check,
   Plus,
@@ -58,6 +59,17 @@ export function PillarBoard({
   const Icon = theme.icon;
   const done = board.tasks.filter((t) => t.done).length;
 
+  const sortedTasks = useMemo(() => {
+    return [...board.tasks].sort((a, b) => {
+      if (a.done !== b.done) {
+        return a.done ? 1 : -1;
+      }
+      const rankA = a.priority === "critical" ? 0 : a.priority === "normal" ? 1 : 2;
+      const rankB = b.priority === "critical" ? 0 : b.priority === "normal" ? 1 : 2;
+      return rankA - rankB;
+    });
+  }, [board.tasks]);
+
   return (
     <section className="panel flex min-h-0 flex-col">
       <div className="flex items-start gap-3 border-b border-border p-4">
@@ -98,7 +110,7 @@ export function PillarBoard({
       </div>
 
       <ul className="scroll-thin max-h-[360px] flex-1 space-y-2 overflow-y-auto p-3 lg:max-h-[460px]">
-        {board.tasks.map((task) => {
+        {sortedTasks.map((task) => {
           const critical = task.priority === "critical";
           const durationStr = formatDuration(task.durationMinutes || 45);
 

@@ -11,7 +11,10 @@ import { StatsView } from "@/components/dashboard/stats-view";
 import { IntroScreen } from "@/components/dashboard/IntroScreen";
 import { TacticalChronometerDock } from "@/components/dashboard/TacticalChronometerDock";
 import { TacticalQuickDock } from "@/components/dashboard/TacticalQuickDock";
-import { TaskStopwatchModal } from "@/components/dashboard/task-stopwatch-modal";
+import {
+  TaskStopwatchModal,
+  type InitialTimerState,
+} from "@/components/dashboard/task-stopwatch-modal";
 import { BOARDS, type Pillar, type Task } from "@/lib/dash-data";
 import {
   deleteTaskFromSupabase,
@@ -83,7 +86,37 @@ function Index() {
   const [activeStopwatch, setActiveStopwatch] = useState<{
     task: Task;
     pillar: Pillar;
+    initialTimerState?: InitialTimerState;
   } | null>(null);
+
+  // Restore active timer from localStorage if present
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem("movone_active_timer");
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (data && data.taskId && data.pillar) {
+          const allTasks = loadBoards().flatMap((b) => b.tasks);
+          const found = allTasks.find((t) => t.id === data.taskId) || data.taskSnapshot;
+          if (found) {
+            setActiveStopwatch({
+              task: found,
+              pillar: data.pillar,
+              initialTimerState: {
+                startedAt: typeof data.startedAt === "number" ? data.startedAt : null,
+                accumulatedSeconds: Number(data.accumulatedSeconds) || 0,
+                isRunning: Boolean(data.isRunning),
+                mode: data.mode === "stopwatch" ? "stopwatch" : "countdown",
+              },
+            });
+          }
+        }
+      }
+    } catch {
+      // Ignore storage/parse errors
+    }
+  }, []);
 
   // Listen to live sync status updates
   useEffect(() => {
@@ -213,10 +246,27 @@ function Index() {
   }
 
   function handleStartTimer(boardId: Pillar, task: Task) {
-    setActiveStopwatch({ task, pillar: boardId });
+    setActiveStopwatch({
+      task,
+      pillar: boardId,
+      initialTimerState: {
+        startedAt: Date.now(),
+        accumulatedSeconds: 0,
+        isRunning: true,
+        mode: "countdown",
+      },
+    });
   }
 
   function handleFinishTimerTask(pillar: Pillar, taskId: string, elapsedMinutes: number) {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("movone_active_timer");
+      } catch {
+        // Ignore storage error
+      }
+    }
+    setActiveStopwatch(null);
     let updatedTaskForCloud: Task | null = null;
     setBoards((prev) =>
       prev.map((b) =>
@@ -252,6 +302,14 @@ function Index() {
   }
 
   function handleUpdateFocusMinutes(pillar: Pillar, taskId: string, elapsedMinutes: number) {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("movone_active_timer");
+      } catch {
+        // Ignore storage error
+      }
+    }
+    setActiveStopwatch(null);
     let updatedTaskForCloud: Task | null = null;
     setBoards((prev) =>
       prev.map((b) =>
@@ -433,7 +491,17 @@ function Index() {
             <TaskStopwatchModal
               task={activeStopwatch.task}
               pillar={activeStopwatch.pillar}
-              onClose={() => setActiveStopwatch(null)}
+              initialTimerState={activeStopwatch.initialTimerState}
+              onClose={() => {
+                if (typeof window !== "undefined") {
+                  try {
+                    localStorage.removeItem("movone_active_timer");
+                  } catch {
+                    // Ignore storage error
+                  }
+                }
+                setActiveStopwatch(null);
+              }}
               onFinishTask={handleFinishTimerTask}
               onUpdateFocusMinutes={handleUpdateFocusMinutes}
             />
